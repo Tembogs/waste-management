@@ -4,7 +4,7 @@ import { Schema,model } from "mongoose";
 const illegalDumpSchema = new Schema({
   reporter: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: "Houser",
     required: true
   },
   

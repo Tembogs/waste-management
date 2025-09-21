@@ -3,8 +3,11 @@ import { Schema, model } from "mongoose";
 export const rewardSchema = new Schema({
   user:{
     type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+    ref: "Houser",
+  },
+   collector:{
+    type: Schema.Types.ObjectId,
+    ref: "Collector",
   },
   points:[
     {
@@ -12,21 +15,11 @@ export const rewardSchema = new Schema({
         type: Number, 
         default: 0 
       },
-      pointsRedeemed: { 
-        type: Number, 
-        default: 0 
-      },
-      rewardItem: String, // Optional: name of item or benefit redeemed
-      redeemedAt: Date,
+      rewardItem: String
     }
   ],
-  lastUpdated:{
-    type:Date,
-    default:Date.now
-  },
   status: {
     type: String,
-    enum: ['Earned', 'Redeemed', 'Expired'],
     default: 'Earned'
   },
   activityType: {

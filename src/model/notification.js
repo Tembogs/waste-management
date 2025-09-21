@@ -3,13 +3,11 @@ import {Schema, model} from "mongoose";
 const notificationSchema = new Schema ({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required:true
+    ref: 'Houser',
   },
   collector: {
     type: Schema.Types.ObjectId,
-    ref:'User',
-    required:true
+    ref:'Collector',
   },
   message: {
     type:String,
@@ -37,3 +35,5 @@ const notificationSchema = new Schema ({
     default:'NewRequest'
   },
 })
+const Notification = model("Notification", notificationSchema)
+export default Notification;

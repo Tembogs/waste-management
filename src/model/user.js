@@ -14,14 +14,15 @@ const userSchema = new Schema({
       type : String,
       required: true
     },
-    phoneNumber:{
+  phoneNumber:{
       type:Number,
       required:true,
       unique: true
     },
   role:{
       type:String,
-      enum:["Houser", "collector", "Community_admin"]
+      enum:["Houser", "Collector", "Community_admin"],
+      default:"Houser"
     },
   location: {
       type:String,

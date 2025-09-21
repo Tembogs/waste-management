@@ -3,12 +3,17 @@ import {Schema, model} from "mongoose";
 const collectorAssaySchema = new Schema({
   collector: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: "Collector",
     required: true
   },
   assayDate: {
     type: Date,
     default: Date.now
+  },
+   status:{
+    type: String,
+    enum: [ 'Accept', 'Reject', 'En Route', 'Collected'],
+    default: "Reject"
   },
   totalCollected: {
     type: Number,
@@ -27,7 +32,8 @@ const collectorAssaySchema = new Schema({
     {
       wasteType: { 
         type: String, 
-        enum: ['general', 'paper', 'plastic', 'glass', 'metal', 'organic', 'e-waste'] 
+        enum: ['general', 'paper', 'plastic', 'glass', 'metal', 'organic', 'e-waste'],
+        default: 'general'
       },
       quantityCollected: Number,
       lastCollectedAt: Date
