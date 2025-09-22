@@ -11,12 +11,5 @@ export const createWasteEntry = async (user, wasteType, quantity, collectionDate
   await wasteEntry.save();
   return wasteEntry;
 }
-export const getAllWasteEntries = async () => {
-  const wasteEntries = await Waste.find().populate('user', 'name email phoneNumber location');
-  return wasteEntries;
-}
-export const getWasteEntryById = async (id) => {
-  const wasteEntry = await Waste.findById(id).populate('user', 'name email phoneNumber location');
-  return wasteEntry;
-}
+
   

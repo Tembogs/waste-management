@@ -44,3 +44,12 @@ export const createWasteRequest = async (user, materials, collector) => {
   await wasteRequest.save();
   return wasteRequest;
 };
+
+export const getAllWasteEntries = async () => {
+  const wasteEntries = await Waste.find().populate('user', 'name email phoneNumber location');
+  return wasteEntries;
+}
+export const getWasteEntryById = async (id) => {
+  const wasteEntry = await Waste.findById(id).populate('user', 'name email phoneNumber location');
+  return wasteEntry;
+}
