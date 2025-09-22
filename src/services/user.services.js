@@ -1,4 +1,5 @@
 import User from "../model/user.js";
+import Waste from "../model/wastecollection.js";
 
 export const createUser = async (name, email, password,phoneNumber, role, location, profilePicture) => {
   const user = new User({
@@ -31,3 +32,15 @@ export const updateUser = async(id, updateInfo) => {
   const user = await User.findByIdAndUpdate(id, updateInfo, {new: true})
   return user;
 }
+
+export const createWasteRequest = async (user, materials, collector) => {
+  const wasteRequest = new Waste({
+    user,
+    materials,
+    collector,
+    status: 'Pending'
+  });
+
+  await wasteRequest.save();
+  return wasteRequest;
+};

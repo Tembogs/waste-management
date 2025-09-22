@@ -3,11 +3,11 @@ import {Schema, model} from "mongoose";
 const notificationSchema = new Schema ({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'Houser',
+    ref: 'User',
   },
   collector: {
     type: Schema.Types.ObjectId,
-    ref:'Collector',
+    ref:'User',
   },
   message: {
     type:String,
@@ -34,6 +34,6 @@ const notificationSchema = new Schema ({
 ],
     default:'NewRequest'
   },
-})
+}, {timestamps: true})
 const Notification = model("Notification", notificationSchema)
 export default Notification;

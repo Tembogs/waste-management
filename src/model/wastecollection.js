@@ -8,17 +8,18 @@ const wasteSchema = new Schema({
   },
   materials:[
     {
-      type: { 
-        type: String, 
-        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'], 
+      wasteType: {
+        type: String,
+        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
         default: 'General',
-        required: true 
+        required: true
       },
-      quantity: Number, 
+      quantity: Number,
       unit: {
-        type: String, 
-        enum: ['kg', 'items', 'liters'], 
-        default: 'kg' }
+        type: String,
+        enum: ['kg', 'items', 'liters'],
+        default: 'kg'
+      }
     }
   ],
 
@@ -33,6 +34,6 @@ const wasteSchema = new Schema({
   ref: 'User' 
 }
 
-})
+}, {timestamps: true})
 const Waste = model("Waste", wasteSchema)
 export default Waste;

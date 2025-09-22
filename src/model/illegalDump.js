@@ -4,7 +4,7 @@ import { Schema,model } from "mongoose";
 const illegalDumpSchema = new Schema({
   reporter: {
     type: Schema.Types.ObjectId,
-    ref: "Houser",
+    ref: "User",
     required: true
   },
   
@@ -13,7 +13,10 @@ const illegalDumpSchema = new Schema({
     required: true
   },
   
-  description: String,
+  description: {
+    type:String,
+    required: true
+  },
   
   photos: [String],
   
@@ -27,6 +30,6 @@ const illegalDumpSchema = new Schema({
     enum: ['Pending', 'In Review', 'Resolved'],
     default: 'Pending'
   }
-})
+}, {timestamps: true})
 const IllegalDump = model("IllegalDump", illegalDumpSchema)
 export default IllegalDump;

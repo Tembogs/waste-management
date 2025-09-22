@@ -3,19 +3,26 @@ import {Schema, model} from "mongoose";
 const recyclingSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: "Houser",
+    ref: "User",
     required: true
   },
   materials:[
     {
-      type: { 
+      wasteType: {
         type: String,
-        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'], 
-        default: 'General', 
-        quantity: Number, 
-        unit: 'kg', 
-        required: true 
+        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
+        default: 'General',
+        required: true
       },
+      quantity: {
+        type: Number,
+        required: true
+      },
+      unit: {
+        type: String,
+        enum: ['kg', 'items', 'liters'],
+        default: 'kg'
+      }
     }
   ],
   recyclingDate: { 
@@ -28,6 +35,6 @@ const recyclingSchema = new Schema({
     default: "Pending"
   },
   location: String
-})
+}, {timestamps: true})
 const Recycling = model("Recycling", recyclingSchema)
 export default Recycling;

@@ -3,21 +3,17 @@ import { Schema, model } from "mongoose";
 export const rewardSchema = new Schema({
   user:{
     type: Schema.Types.ObjectId,
-    ref: "Houser",
+    ref: "User",
   },
    collector:{
     type: Schema.Types.ObjectId,
-    ref: "Collector",
+    ref: "User",
   },
-  points:[
-    {
-      pointsEarned: { 
-        type: Number, 
-        default: 0 
-      },
-      rewardItem: String
-    }
-  ],
+  pointsEarned: {
+    type: Number,
+    default: 0
+  },
+  rewardItem: String,
   status: {
     type: String,
     default: 'Earned'
@@ -27,6 +23,6 @@ export const rewardSchema = new Schema({
     enum: ['Recycling', 'WasteRequest', 'IllegalDumpReport'],
     required: true
   }
-})
+}, {timestamps: true})
 const Reward = model("Reward", rewardSchema)
 export default Reward;

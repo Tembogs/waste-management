@@ -35,8 +35,9 @@ const userSchema = new Schema({
     gender:{
       type: String,
       enum: ["Male", "Female", "Other"],
-      default: "Other"
+      default: "Other",
+      required: true
     }
-})
+}, {timestamps: true})
 const User = model("User", userSchema)
 export default User;

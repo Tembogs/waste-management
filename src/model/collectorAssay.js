@@ -3,7 +3,7 @@ import {Schema, model} from "mongoose";
 const collectorAssaySchema = new Schema({
   collector: {
     type: Schema.Types.ObjectId,
-    ref: "Collector",
+    ref: "User",
     required: true
   },
   assayDate: {
@@ -36,10 +36,9 @@ const collectorAssaySchema = new Schema({
         default: 'general'
       },
       quantityCollected: Number,
-      lastCollectedAt: Date
     }
   ],
    serviceArea: String
-})
+}, {timestamps: true})
 const CollectorAssay = model("CollectorAssay", collectorAssaySchema)
 export default CollectorAssay;
