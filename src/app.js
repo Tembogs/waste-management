@@ -2,12 +2,16 @@ import express from 'express';
 import dotenv from 'dotenv';
 import setUpMiddlewares from './middlerware/index.js';
 import userRoutes from './routes/user.routes.js';
+import collectorRoutes from './routes/collector.routes.js';
+import authRouter from './routes/auth.routes.js';
 
 const app = express();
 dotenv.config();
 setUpMiddlewares(app);
 
 app.use('/api/users', userRoutes);
+app.use('/api/collectors', collectorRoutes);
+app.use('/api/auth', authRouter);
 
 app.get('/', (req, res) => {
   res.json({
