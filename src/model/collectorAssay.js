@@ -1,7 +1,7 @@
 import {Schema, model} from "mongoose";
 
 const collectorAssaySchema = new Schema({
-  collectorName: {
+  collector: {
     type: String,
     required: true
   },
