@@ -33,10 +33,11 @@ export const fetchWasteEntryById = async (req, res) => {
 
 export const viewWasteStatus = async (req, res) => {
   try {
-    const wasteId = req.params.id;
-    // const userId = req.user._id;
+    const userId = req.user.id;
 
-    const statusInfo = await getWasteStatus(wasteId);
+    console.log(userId)
+
+    const statusInfo = await getWasteStatus(userId);
     res.status(200).json(statusInfo);
   } catch (error) {
     res.status(404).json({ message: error.message });

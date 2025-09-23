@@ -43,7 +43,8 @@ const userSchema = new Schema({
       {
         type: String,
         enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General'
+        default: 'General',
+        required:false
       }
     ],
 }, {timestamps: true})

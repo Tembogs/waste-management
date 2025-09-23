@@ -1,5 +1,4 @@
 import User from "../model/user.js";
-// import Waste from "../model/wastecollection.js";
 
 export const createUser = async (name, email, password,phoneNumber, role, location, profilePicture) => {
   const user = new User({

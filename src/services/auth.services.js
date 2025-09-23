@@ -2,8 +2,9 @@ import jwt from "jsonwebtoken";
 import User from "../model/user.js";
 import { createUser } from "./user.services.js";
 import bcrypt from "bcrypt";
+import { sendEmail } from './email.services.js';
 
-export const register = async (name, email, password,phoneNumber, role, location) => {
+export const register = async (name, email, password,phoneNumber, role, location, gender) => {
     try{
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password, salt)
@@ -13,10 +14,13 @@ export const register = async (name, email, password,phoneNumber, role, location
             hashedPassword,
             phoneNumber,
             role,
-            location
-
+            location,
+            gender
         )
-        return user
+        const subject = "Welcome to Waste Management System Nigeria";
+        const html = `<h1>Hi ${name},</h1><p>Thank you for registering. We're excited to have you.</p>`;
+        await sendEmail(email, subject, html);
+        return user;
     }catch(error){
         console.log(error);
         return error;

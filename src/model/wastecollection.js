@@ -1,4 +1,5 @@
 import {Schema, model} from "mongoose";
+import dayjs from 'dayjs';
 
 const wasteSchema = new Schema({
   user: {
@@ -39,9 +40,16 @@ const wasteSchema = new Schema({
     address: String
   },
   collectionDate: {
-    type: Date,
-  },
-  notes: String,
+  type: String,
+  default: () => dayjs().format('YYYY-MM-DD'),
+  required: false
+},
+requestDate: {
+  type: String,
+  default: () => dayjs().format('YYYY-MM-DD')
+}
+,
+
   images: [String],
   status: {
     type: String,
@@ -50,9 +58,10 @@ const wasteSchema = new Schema({
     index: true
   },
   rejectionReason: String,
+
   collector: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'CollectorAssay',
     index: true
   }
 }, { timestamps: true });
