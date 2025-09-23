@@ -2,9 +2,13 @@ import {Schema, model} from "mongoose";
 
 const collectorAssaySchema = new Schema({
   collector: {
+    type: String,
+    required: true
+  },
+  user: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: true,
   },
   assayDate: {
     type: Date,
