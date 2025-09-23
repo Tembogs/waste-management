@@ -1,4 +1,4 @@
-import {createUser, getAllUsers, getUserbyId, updateUser, deleteUser} from "../services/user.services.js";
+import {createUser, getAllUsers, getUserbyId, updateUser, deleteUser, } from "../services/user.services.js";
 
 export const createNewUser = async (req, res) =>{
   const {name, email, password, phoneNumber, role, location, profilePicture} = req.body;

@@ -24,6 +24,7 @@ const userSchema = new Schema({
       enum:["Houser", "Collector", "Community_admin"],
       default:"Houser"
     },
+
   location: {
       type:String,
       required: true
@@ -37,7 +38,14 @@ const userSchema = new Schema({
       enum: ["Male", "Female", "Other"],
       default: "Other",
       required: true
-    }
+    },
+    materials: [
+      {
+        type: String,
+        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
+        default: 'General'
+      }
+    ],
 }, {timestamps: true})
 const User = model("User", userSchema)
 export default User;
