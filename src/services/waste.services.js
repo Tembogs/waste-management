@@ -16,7 +16,7 @@ export const createWasteRequest = async (wasteData) => {
     requestDate: wasteData.requestDate,
     notes: wasteData.notes,
     images: wasteData.images,
-    status: 'Pending'
+    status: wasteData.status
   });
 
   await wasteRequest.save();
@@ -30,19 +30,16 @@ export const createWasteRequest = async (wasteData) => {
   const subject = "New Waste Product Request 🚮🗑️";
   const html = `
     <h1>Hi ${user.name},</h1>
-    <p>Thank you for submitting a waste request. Here's a summary of your materials:</p>
+    <p>Thank you for submitting your waste request. Here's a summary of your materials:</p>
     <p>${materialSummary}</p>
-    <p>Status: <strong>Pending</strong></p>
+    <p>Status: <strong>${wasteRequest.status}</strong></p>
     <p>We'll notify you once a collector is assigned.</p>
   `;
   try {
-  await sendEmail("temmytizzy201@gmail.com", subject, html);
+  await sendEmail(user.email, subject, html);
 } catch (error) {
   console.error('Email sending failed:', error.message);
 }
-
-
-
   return wasteRequest;
 };
 

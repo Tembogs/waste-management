@@ -7,7 +7,7 @@ const router = Router();
 router.post("/", createNewRecycle);
 router.get("/", fetchAllRecycleEntries);
 router.get("/:id", fetchRecycleEntryById);
-router.get("/status", protect, viewRecycleStatus);
+router.get("/status/:id", protect, viewRecycleStatus);
 router.put("/:id", editRecycle);
 router.delete("/:id", removeRecycleEntry);
 export default router;

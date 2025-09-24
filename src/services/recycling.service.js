@@ -1,22 +1,50 @@
 import Recycling from "../model/recycling.js";
 import User from "../model/user.js";
+import { sendEmail } from "./email.services.js";
 
-export const createRequestRequest = async (recycleData) => {
-  const user = await User.findById(recycleData.userId).select("name email phoneNumber");
-  if (!user) throw new Error("User not found");
+export const createRecycleRequest = async (recycleData) => {
+  try {
+    const user = await User.findById(recycleData.userId).select("name email phoneNumber");
+    if (!user) throw new Error("User not found");
 
-  if (!recycleData.materials || !recycleData.materials.length) return null;
+    if (!recycleData.materials || !recycleData.materials.length) {
+      console.warn("No materials provided for recycling.");
+      return null;
+    }
 
-  const recycleRequest = new Recycling({
-    user: user._id,
-    materials: recycleData.materials,
-    location: recycleData.location,
-    recyclingDate: recycleData.collectionDate,
-    status: 'Pending'
-  });
+    const recycleRequest = new Recycling({
+      user: user._id,
+      materials: recycleData.materials,
+      location: recycleData.location,
+      recyclingDate: recycleData.recyclingDate,
+      status: recycleData.status || "Pending"
+    });
 
-  await recycleRequest.save();
-  return recycleRequest;
+    await recycleRequest.save();
+
+    const materialSummary = recycleData.materials.map((item, index) => {
+      return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
+    }).join('<br>');
+
+    // 📧 Email to user
+    const subject = "New Recycling Request ♻️";
+    const html = `
+      <h1>Hi ${user.name},</h1>
+      <p>Thank you for submitting your recycling request. Here's a summary of your materials:</p>
+      <p>${materialSummary}</p>
+      <p><strong>Location:</strong> ${recycleRequest.location}</p>
+      <p><strong>Recycle Date:</strong> ${recycleRequest.recyclingDate}</p>
+      <p><strong>Status:</strong> ${recycleRequest.status}</p>
+      <p>We'll notify you once a collector is assigned.</p>
+    `;
+
+    await sendEmail(user.email, subject, html);
+
+    return recycleRequest;
+  } catch (error) {
+    console.error("Recycling request creation failed:", error.message);
+    throw error;
+  }
 };
 
 

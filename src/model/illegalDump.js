@@ -1,4 +1,5 @@
 import { Schema,model } from "mongoose";
+import dayjs from "dayjs";
 
 
 const illegalDumpSchema = new Schema({
@@ -21,8 +22,8 @@ const illegalDumpSchema = new Schema({
   photos: [String],
   
   reportDate: {
-    type: Date,
-    default: Date.now
+     type: String,
+    default: () => dayjs().format('YYYY-MM-DD')
   },
 
   status: {

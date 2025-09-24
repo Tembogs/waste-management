@@ -1,9 +1,9 @@
 
-import {createRequestRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry} from "../services/recycling.service.js";
+import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry} from "../services/recycling.service.js";
 
 export const createNewRecycle = async (req, res) => {
   try {
-    const recycleRequest = await createRequestRequest(req.body);
+    const recycleRequest = await createRecycleRequest(req.body);
     res.status(201).json(recycleRequest);
   } catch (error) {
     res.status(400).json({ message: error.message });

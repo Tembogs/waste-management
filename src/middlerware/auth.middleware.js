@@ -25,10 +25,14 @@ export const protect = async (req, res, next) => {
 };
 
 export const admin = async (req, res, next) => {
-    if(req.user && (req.user.role === "Collector" || req.user.role === "Community-admin")){
-       return next();
-    }else{
-       return res.status(401).json({message: `you are not an admin`}) 
-    }
-    
+ const allowedRoles = ["Collector", "Community-admin"];
+
+if (req.user && allowedRoles.includes(req.user.role)) {
+  return next();
+} else {
+  return res.status(401).json({
+    message: `Access denied. Role '${req.user?.role || "Unknown"}' is not authorized to perform this action.`
+  });
+}
+   
 };

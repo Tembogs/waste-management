@@ -1,5 +1,5 @@
 import {Schema, model} from "mongoose";
-
+import dayjs from "dayjs";
 const recyclingSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
@@ -26,8 +26,8 @@ const recyclingSchema = new Schema({
     }
   ],
   recyclingDate: { 
-    type: Date, 
-    default: Date.now
+     type: String,
+    default: () => dayjs().format('YYYY-MM-DD')
   },
    status:{
     type: String,
