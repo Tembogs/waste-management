@@ -44,6 +44,9 @@ export const login = async (email, password) => {
         const token = jwt.sign({id: user.id, role: user.role}, process.env.JWT_SECRET, {
             expiresIn: "1hr"
         })
+        const subject = `Welcome back ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name}`;
+        const html = `<h1>Hi ${user.name},</h1><p>Thank you for getting back into the app with the intention to make our environment clean. We're excited to have you.</p>`;
+        await sendEmail(user.email, subject, html);
         return { user, token }
     }catch(error){
         console.log(error)

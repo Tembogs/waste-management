@@ -1,13 +1,44 @@
 import Waste from "../model/wastecollection.js";
 import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
+import Reward from "../model/rewards.js";
 
 
 export const createWasteRequest = async (wasteData) => {
-  const user = await User.findById(wasteData.userId).select("name email phoneNumber");
+  const user = await User.findById(wasteData.userId).select("name email phoneNumber gender");
   if (!user) throw new Error("User not found");
 
   if (!wasteData.materials || !wasteData.materials.length) return null;
+  const materialPoints = {
+  General: 1,
+  Paper: 2,
+  Plastic: 3,
+  Glass: 2,
+  Metal: 4,
+  Organic: 2,
+  'E-waste': 5
+};
+ const calculatePoints = (materials) => {
+  let totalPoints = 0;
+  materials.forEach(item => {
+    const basePoints = materialPoints[item.wasteType] || 0;
+    const itemPoints = basePoints * item.quantity;
+    const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
+    totalPoints += itemPoints * bonusMultiplier;
+  });
+
+  return Math.round(totalPoints); 
+};
+const pointsEarned = calculatePoints(wasteData.materials);
+
+const reward = new Reward({
+  user: user._id,
+  pointsEarned,
+  rewardItem: "Waste Request Bonus 💫✨",
+  activityType: "WasteRequest"
+});
+
+await reward.save();
 
   const wasteRequest = new Waste({
     user: user._id,
@@ -16,23 +47,26 @@ export const createWasteRequest = async (wasteData) => {
     requestDate: wasteData.requestDate,
     notes: wasteData.notes,
     images: wasteData.images,
-    status: wasteData.status
+    status: wasteData.status,
+    Reward:reward._id
   });
-
   await wasteRequest.save();
+  
+
 
   // 🧾 Format material summary
   const materialSummary = wasteData.materials.map((item, index) => {
     return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
   }).join('<br>');
 
-  // 📧 Email to user
+  // 📧 Email to user 
   const subject = "New Waste Product Request 🚮🗑️";
   const html = `
-    <h1>Hi ${user.name},</h1>
+    <h1>Hi ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
     <p>Thank you for submitting your waste request. Here's a summary of your materials:</p>
     <p>${materialSummary}</p>
     <p>Status: <strong>${wasteRequest.status}</strong></p>
+    <p>Points-Earned: ${reward.pointsEarned} pts </p>
     <p>We'll notify you once a collector is assigned.</p>
   `;
   try {
@@ -50,7 +84,7 @@ export const getAllWasteEntries = async () => {
 }
 
 export const getWasteEntryById = async (id) => {
-  const wasteEntry = await Waste.findById(id).populate('user', 'name email phoneNumber');
+  const wasteEntry = await Waste.findById(id).populate('user', 'name email phoneNumber gender');
 
   if (!wasteEntry || !wasteEntry.materials) {
     throw new Error("Waste entry or materials not found.");
@@ -61,10 +95,10 @@ export const getWasteEntryById = async (id) => {
     return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
   }).join('<br>');
 
-  // 📧 Email to user
+  // 📧 Email to user 
   const subject = "Waste Product Request 🚮🗑️";
   const html = `
-    <h1>Hi ${wasteEntry.user.name} 👋</h1>
+    <h1>Hi ${wasteEntry.user.gender === "Male" ? "Mr" : wasteEntry.user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${wasteEntry.user.name} 👋</h1>
     <p>Thanks for submitting another waste request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
     <p>Here’s a quick summary of your latest request:</p>
     <p>${materialSummary}</p>
@@ -79,7 +113,7 @@ export const getWasteEntryById = async (id) => {
 };
 
 export const getWasteStatus = async (userId) => {
-  const wasteEntries = await Waste.find({ user: userId }).populate('user', 'name email phoneNumber');
+  const wasteEntries = await Waste.find({ user: userId }).populate('user', 'name email phoneNumber gender');
 
   if (!wasteEntries || wasteEntries.length === 0) {
     throw new Error('No waste requests found for this user.');
@@ -92,10 +126,10 @@ export const getWasteStatus = async (userId) => {
     return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
   }).join('<br>');
 
-  // 📧 Email to user
+  // 📧 Email to user 
   const subject = "Waste Product Status Request 🚮🗑️";
   const html = `
-    <h1>Hi ${latestEntry.user.name} 👋</h1>
+    <h1>Hi ${latestEntry.user.gender === "Male" ? "Mr" : latestEntry.user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${latestEntry.user.name} 👋</h1>
     <p>Thanks for submitting another waste request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
     <p>Here’s a quick summary of your latest request:</p>
     <p>${materialSummary}</p>

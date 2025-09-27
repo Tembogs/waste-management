@@ -25,7 +25,7 @@ export const reportIllegalDump = async (illegalData) => {
     // 📧 Email to user
     const subject = "🚨 Illegal Dump Report Received";
     const html = `
-      <h1>Hello ${user.name},</h1>
+      <h1>Hello ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
       <p>Thanks for reporting an illegal dumping incident. Here's what we received:</p>
       <p><strong>Location:</strong> ${illegalRequest.location}</p>
       <p><strong>Description:</strong> ${illegalRequest.description}</p>
@@ -37,9 +37,6 @@ export const reportIllegalDump = async (illegalData) => {
 
     await sendEmail(user.email, subject, html);
     console.log(`Email sent to ${user.email}`);
-
-    // 📱 Optional: SMS notification
-    // await sendSMS(user.phoneNumber, `Hi ${user.name}, your illegal dump report has been received. Status: ${illegalRequest.status}`);
 
     return illegalRequest;
   } catch (error) {

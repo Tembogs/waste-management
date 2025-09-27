@@ -7,7 +7,7 @@ export const rewardSchema = new Schema({
   },
    collector:{
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: "CollectorAssay",
   },
   pointsEarned: {
     type: Number,

@@ -58,6 +58,10 @@ requestDate: {
     index: true
   },
   rejectionReason: String,
+  Reward:{ 
+    type: Schema.Types.ObjectId, 
+    ref: "Reward" 
+  },
 
   collector: {
     type: Schema.Types.ObjectId,

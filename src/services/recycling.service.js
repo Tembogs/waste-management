@@ -4,7 +4,7 @@ import { sendEmail } from "./email.services.js";
 
 export const createRecycleRequest = async (recycleData) => {
   try {
-    const user = await User.findById(recycleData.userId).select("name email phoneNumber");
+    const user = await User.findById(recycleData.userId).select("name email phoneNumber gender");
     if (!user) throw new Error("User not found");
 
     if (!recycleData.materials || !recycleData.materials.length) {
@@ -29,7 +29,7 @@ export const createRecycleRequest = async (recycleData) => {
     // 📧 Email to user
     const subject = "New Recycling Request ♻️";
     const html = `
-      <h1>Hi ${user.name},</h1>
+      <h1>Hi ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
       <p>Thank you for submitting your recycling request. Here's a summary of your materials:</p>
       <p>${materialSummary}</p>
       <p><strong>Location:</strong> ${recycleRequest.location}</p>
