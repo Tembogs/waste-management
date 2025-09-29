@@ -1,8 +1,8 @@
 import {createUser, getAllUsers, getUserbyId, updateUser, deleteUser, } from "../services/user.services.js";
 
 export const createNewUser = async (req, res) =>{
-  const {name, email, password, phoneNumber, role, location, profilePicture} = req.body;
-  const users = await createUser(name, email, password, phoneNumber,role, location, profilePicture)
+  const {name, email, password, phoneNumber, role, location,gender} = req.body;
+  const users = await createUser(name, email, password, phoneNumber,role, location,gender)
   if (!users) {
     return res.status(400).json({message: "incomplete details"})
   }

@@ -18,7 +18,7 @@ export const register = async (name, email, password,phoneNumber, role, location
             gender
         )
         const subject = "Welcome to Waste Management System Nigeria";
-        const html = `<h1>Hi ${name},</h1><p>Thank you for registering. We're excited to have you.</p>`;
+        const html = `<h1>Hi ${gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'} ${name},</h1><p>Thank you for registering. We're excited to have you.</p>`;
         await sendEmail(email, subject, html);
         return user;
     }catch(error){
