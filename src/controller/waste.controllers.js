@@ -1,4 +1,4 @@
-import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry} from "../services/waste.services.js";
+import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService} from "../services/waste.services.js";
 
 export const createNewWaste = async (req, res) => {
   try {
@@ -64,3 +64,31 @@ export const removeWasteEntry = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+
+
+
+// Collector Section
+
+export const acceptWasteRequest = async (req, res) => {
+  const { wasteId, collectorAssayId } = req.body;
+
+  try {
+    const result = await acceptWasteRequestService(wasteId, collectorAssayId);
+    res.status(200).json({ message: "Waste request accepted", data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const rejectWasteRequest = async (req, res) => {
+  const { wasteId, collectorAssayId, rejectionReason } = req.body;
+
+  try {
+    const result = await rejectWasteRequestService(wasteId, collectorAssayId, rejectionReason);
+    res.status(200).json({ message: "Waste request rejected", data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+

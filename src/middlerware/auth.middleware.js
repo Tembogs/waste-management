@@ -36,3 +36,10 @@ if (req.user && allowedRoles.includes(req.user.role)) {
 }
    
 };
+
+export const isCollector = (req, res, next) => {
+  if (req.user.role !== "Collector") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  next();
+};

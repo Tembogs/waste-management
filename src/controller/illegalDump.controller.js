@@ -27,6 +27,8 @@ export const fetchAllIllegalEntryById = async (req,res) => {
     if(!illegalEntry){
       return res.status(404).json({message:"Illegal entry not found"})
     }
+    res.status(200).json(illegalEntry);
+
   } catch(error){
     res.status(400).json({message:error.message})
   }

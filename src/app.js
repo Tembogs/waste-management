@@ -6,6 +6,7 @@ import wasteRoutes from './routes/waste.routes.js';
 import authRouter from './routes/auth.routes.js';
 import recycleRoutes from './routes/recycle.routes.js';
 import illegalDumpRoutes from './routes/illegalDump.routes.js';
+
 const app = express();
 dotenv.config();
 setUpMiddlewares(app);

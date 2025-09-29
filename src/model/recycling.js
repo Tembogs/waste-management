@@ -34,7 +34,11 @@ const recyclingSchema = new Schema({
     enum: ['Pending', 'Accepted', 'Rejected', 'En Route', 'Collected'],
     default: "Pending"
   },
-  location: String
+  location: String,
+   Reward:{ 
+      type: Schema.Types.ObjectId, 
+      ref: "Reward" 
+    },
 }, {timestamps: true})
 const Recycling = model("Recycling", recyclingSchema)
 export default Recycling;

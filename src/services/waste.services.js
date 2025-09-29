@@ -2,6 +2,7 @@ import Waste from "../model/wastecollection.js";
 import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
 import Reward from "../model/rewards.js";
+import CollectorAssay from "../model/collectorAssay.js";
 
 
 export const createWasteRequest = async (wasteData) => {
@@ -58,6 +59,7 @@ await reward.save();
   const materialSummary = wasteData.materials.map((item, index) => {
     return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
   }).join('<br>');
+  // console.log(`${item.wasteType}`)
 
   // 📧 Email to user 
   const subject = "New Waste Product Request 🚮🗑️";
@@ -156,19 +158,164 @@ export const deleteWasteEntry = async (id) => {
   return wasteEntry;
 }
 
-export const updatewaste = async (id, updateData) => { 
-  const allowedUpdates = ['materials', 'collectionDate', 'notes', 'images', "location"];
+export const updatewaste = async (id, updateData) => {
+  const allowedUpdates = ['materials', 'collectionDate', 'notes', 'images', 'location'];
   const updates = {};
 
+  // Filter only allowed fields
   for (const key in updateData) {
     if (allowedUpdates.includes(key)) {
       updates[key] = updateData[key];
     }
   }
 
-  const wasteEntry = await Waste.findByIdAndUpdate(id, { $set: updates }, { new: true });
+  // Update waste entry and populate reward and user details
+  const wasteEntry = await Waste.findByIdAndUpdate(id, { $set: updates }, { new: true })
+    .populate('Reward')
+    .populate('user', 'name email phoneNumber gender');
+
+  // Recalculate reward if materials were updated
+  if (updateData.materials && updateData.materials.length && wasteEntry.Reward) {
+    const materialPoints = {
+      General: 1,
+      Paper: 2,
+      Plastic: 3,
+      Glass: 2,
+      Metal: 4,
+      Organic: 2,
+      'E-waste': 5
+    };
+
+    const calculatePoints = (materials) => {
+      let totalPoints = 0;
+      materials.forEach(item => {
+        const basePoints = materialPoints[item.wasteType] || 0;
+        const itemPoints = basePoints * item.quantity;
+        const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
+        totalPoints += itemPoints * bonusMultiplier;
+      });
+      return Math.round(totalPoints);
+    };
+
+    const newPoints = calculatePoints(updateData.materials);
+
+    await Reward.findByIdAndUpdate(wasteEntry.Reward._id, {
+      $set: { pointsEarned: newPoints }
+    });
+
+    // Update local reference for email
+    wasteEntry.Reward.pointsEarned = newPoints;
+  }
+
+  // Format material summary
+  const materialSummary = wasteEntry.materials.map((item, index) => {
+    return `${index + 1}. ${item.quantity} ${item.unit || 'units'} of ${item.wasteType}`;
+  }).join('<br>');
+
+  // Compose email
+  const subject = "Waste Product Request 🚮🗑️";
+  const html = `
+    <h1>Hi ${wasteEntry.user.gender === "Male" ? "Mr" : wasteEntry.user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${wasteEntry.user.name} 👋</h1>
+    <p>Thanks for submitting another waste request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
+    <p>Here’s a quick summary of your latest request:</p>
+    <p>${materialSummary}</p>
+    <p>Status: <strong>${wasteEntry.status} ⏳</strong></p>
+    <p>Points-Earned: ${wasteEntry.Reward.pointsEarned} pts </p>
+    <p>We'll notify you once a collector is assigned.</p>
+    <p>If you have any updates or questions, feel free to reply to this email 📩.</p>
+    <p>You're making a difference—thank you for being part of the solution 💚!</p>
+  `;
+
+  // Send email
+  try {
+    await sendEmail(wasteEntry.user.email, subject, html);
+  } catch (error) {
+    console.error('Email sending failed:', error.message);
+  }
+
   return wasteEntry;
-}
+};
+
+
+// Collector Section
+
+export const acceptWasteRequestService = async (wasteId, collectorAssayId) => {
+  const waste = await Waste.findById(wasteId);
+  if (!waste) throw new Error("Waste request not found");
+   if (waste.status === "Accepted" || waste.status === "Rejected") {
+    throw new Error("Waste request has already been processed");
+  }
+
+
+  waste.status = "Accepted";
+  waste.collector = collectorAssayId;
+  await waste.save();
+
+  const assay = await CollectorAssay.findById(collectorAssayId);
+  if (assay) {
+    assay.status = "Accepted";
+    assay.acceptedRequests += 1;
+
+    waste.materials.forEach(({ wasteType, quantity }) => {
+      const normalizedType = wasteType.toLowerCase();
+      const stat = assay.collectionStats.find(s => s.wasteType === normalizedType);
+
+      if (stat) {
+        stat.quantityCollected += quantity;
+        stat.updatedAt = new Date();
+      } else {
+        assay.collectionStats.push({
+          wasteType: normalizedType,
+          quantityCollected: quantity,
+          updatedAt: new Date()
+        });
+      }
+    });
+
+    assay.totalQuantityCollected += waste.materials.reduce((sum, m) => sum + m.quantity, 0);
+    await assay.save();
+  }
+
+  return waste;
+};
+
+
+export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejectionReason = "") => {
+  const waste = await Waste.findById(wasteId);
+  if (!waste) throw new Error("Waste request not found");
+   if (waste.status === "Accepted" || waste.status === "Rejected") {
+    throw new Error("Waste request has already been processed");
+  }
+  if (!rejectionReason || rejectionReason.trim() === "") {
+    throw new Error("Rejection reason is required when rejecting a waste request");
+  }
+
+
+  waste.status = "Rejected";
+  waste.collector = null;
+  waste.rejectionReason = rejectionReason;
+  await waste.save();
+
+  const assay = await CollectorAssay.findById(collectorAssayId);
+  if (assay) {
+    assay.status = "Rejected";
+    assay.rejectedRequests += 1;
+    await assay.save();
+  }
+
+  return waste;
+};
+
+
+
+export const getCollectorStat = async (collectorAssayId) => {
+  const collectorStat = await Waste.find({
+    collector: collectorAssayId
+  }).populate('collector',"assayDate totalQuantityCollected acceptedRequests rejectedRequests materials" )
+  .populate('user', 'name email phoneNumber'); 
+
+  return collectorStat;
+};
 
 
 
