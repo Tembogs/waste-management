@@ -3,8 +3,9 @@ import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatu
 
 export const createNewWaste = async (req, res) => {
   try {
-    // const userId = req.user_id;
-    const wasteRequest = await createWasteRequest(req.body);
+    const userId = req.user._id; // assuming your auth middleware sets req.user
+    // const wasteData = { ...req.body };
+    const wasteRequest = await createWasteRequest(req.body, userId);
     res.status(201).json(wasteRequest);
   } catch (error) {
     res.status(400).json({ message: error.message });
