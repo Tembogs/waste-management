@@ -14,7 +14,7 @@ configDotenv()
         });
 
         const info = await transporter.sendMail({
-            from: '"  Waste-Management Nigeria" <no-reply@example.com>',
+            from: '"  Waste-Wase! Nigeria" <no-reply@example.com>',
             to,
             subject,
             html,

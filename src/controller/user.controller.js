@@ -1,13 +1,6 @@
-import {createUser, getAllUsers, getUserbyId, updateUser, deleteUser, } from "../services/user.services.js";
+import {getAllUsers, getUserbyId, updateUser, deleteUser, } from "../services/user.services.js";
 
-export const createNewUser = async (req, res) =>{
-  const {name, email, password, phoneNumber, role, location,gender} = req.body;
-  const users = await createUser(name, email, password, phoneNumber,role, location,gender)
-  if (!users) {
-    return res.status(400).json({message: "incomplete details"})
-  }
-  return res.status(201).json(users)
-}
+
 
 
 export const fetchAllUsers = async (req,res) =>{

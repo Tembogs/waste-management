@@ -1,7 +1,9 @@
+import CollectorAssay from "../model/collectorAssay.js";
 import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat} from "../services/waste.services.js";
 
 export const createNewWaste = async (req, res) => {
   try {
+    // const userId = req.user_id;
     const wasteRequest = await createWasteRequest(req.body);
     res.status(201).json(wasteRequest);
   } catch (error) {
@@ -92,13 +94,17 @@ export const rejectWasteRequest = async (req, res) => {
   }
 };
 
-export const collectorView = async(req,res)=> {
-  try{
-    const collectorId = req.user.id 
-    const collectorDet = await getCollectorStat(collectorId);
-    res.status(200).json(collectorDet)
-  }catch(error){
-    res.status(400).json({message:error.message})
+export const collectorView = async (req, res) => {
+  try {
+    const collectorAssay = await CollectorAssay.findOne({ user: req.user.id });
+    if (!collectorAssay) {
+      return res.status(404).json({ message: "CollectorAssay not found for this user" });
+    }
+
+    const collectorDet = await getCollectorStat(collectorAssay._id);
+    res.status(200).json(collectorDet);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 }
 

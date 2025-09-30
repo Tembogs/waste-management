@@ -1,9 +1,10 @@
+import dayjs from "dayjs";
 import { Schema, model } from "mongoose";
 
 const collectorAssaySchema = new Schema({
   collector: {
     type: Schema.Types.ObjectId,
-    ref: "Collector", 
+    ref: "User", 
     required: true
   },
   user: {

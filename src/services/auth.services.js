@@ -4,15 +4,18 @@ import { createUser } from "./user.services.js";
 import bcrypt from "bcrypt";
 import { sendEmail } from './email.services.js';
 import CollectorAssay from "../model/collectorAssay.js";
+import mongoose from "mongoose";
 
 export const register = async (name, email, password, phoneNumber, role, location, gender) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).session(session);
     if (existingUser) throw new Error("Email already registered");
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
     const normalizedLocation = location.trim().toLowerCase();
 
     const user = new User({
@@ -25,7 +28,7 @@ export const register = async (name, email, password, phoneNumber, role, locatio
       gender
     });
 
-    await user.save();
+    await user.save({ session });
 
     if (role === 'Collector') {
       const collectorAssay = new CollectorAssay({
@@ -33,7 +36,7 @@ export const register = async (name, email, password, phoneNumber, role, locatio
         collector: user._id,
         serviceArea: normalizedLocation
       });
-      await collectorAssay.save();
+      await collectorAssay.save({ session });
     }
 
     const subject = "Welcome to WasteWise! System Nigeria";
@@ -43,13 +46,17 @@ export const register = async (name, email, password, phoneNumber, role, locatio
     `;
     await sendEmail(email, subject, html);
 
+    await session.commitTransaction();
+    session.endSession();
+
     return user;
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Registration error:", error.message);
     return null;
   }
 };
-
 export const login = async (email, password) => {
   try {
     const user = await User.findOne({ email });

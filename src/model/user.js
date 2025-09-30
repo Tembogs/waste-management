@@ -47,6 +47,11 @@ const userSchema = new Schema({
         required:false
       }
     ],
+    Reward: {
+      type: Number,
+      default: 0
+    }
+
 }, {timestamps: true})
 const User = model("User", userSchema)
 export default User;
