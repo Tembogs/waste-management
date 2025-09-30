@@ -17,14 +17,22 @@ export const fetchAllUsers = async (req,res) =>{
 }
 
 
-export const fetchUserById = async (req,res) =>{
-  const {id} = req.params;
-  const users = await getUserbyId(id);
- if(!users){
-  return res.status(404).json({message: "profile not found"})
- }
- return res.status(200).json(users)
-}
+export const fetchUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getUserbyId(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 
 export const editUser = async(req, res) => {

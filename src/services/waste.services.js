@@ -10,36 +10,45 @@ export const createWasteRequest = async (wasteData) => {
   if (!user) throw new Error("User not found");
 
   if (!wasteData.materials || !wasteData.materials.length) return null;
+
   const materialPoints = {
-  General: 1,
-  Paper: 2,
-  Plastic: 3,
-  Glass: 2,
-  Metal: 4,
-  Organic: 2,
-  'E-waste': 5
-};
- const calculatePoints = (materials) => {
-  let totalPoints = 0;
-  materials.forEach(item => {
-    const basePoints = materialPoints[item.wasteType] || 0;
-    const itemPoints = basePoints * item.quantity;
-    const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
-    totalPoints += itemPoints * bonusMultiplier;
+    General: 1,
+    Paper: 2,
+    Plastic: 3,
+    Glass: 2,
+    Metal: 4,
+    Organic: 2,
+    'E-waste': 5
+  };
+
+  const calculatePoints = (materials) => {
+    return Math.round(materials.reduce((total, item) => {
+      const base = materialPoints[item.wasteType] || 0;
+      const bonus = item.quantity > 50 ? 1.1 : 1;
+      return total + base * item.quantity * bonus;
+    }, 0));
+  };
+
+  const pointsEarned = calculatePoints(wasteData.materials);
+
+  const reward = new Reward({
+    user: user._id,
+    pointsEarned,
+    rewardItem: "Waste Request Bonus 💫✨",
+    activityType: "WasteRequest"
+  });
+  await reward.save();
+
+  const normalizedLocation = wasteData.location?.trim().toLowerCase();
+  const assignedCollector = await CollectorAssay.findOne({
+    serviceArea: normalizedLocation,
+    status: { $in: ['EnRoute', 'Accepted'] }
   });
 
-  return Math.round(totalPoints); 
-};
-const pointsEarned = calculatePoints(wasteData.materials);
-
-const reward = new Reward({
-  user: user._id,
-  pointsEarned,
-  rewardItem: "Waste Request Bonus 💫✨",
-  activityType: "WasteRequest"
-});
-
-await reward.save();
+  let collectorUser = null;
+  if (assignedCollector) {
+    collectorUser = await User.findById(assignedCollector.user).select("email name gender serviceArea");
+  }
 
   const wasteRequest = new Waste({
     user: user._id,
@@ -49,33 +58,40 @@ await reward.save();
     notes: wasteData.notes,
     images: wasteData.images,
     status: wasteData.status,
-    Reward:reward._id
+    Reward: reward._id,
+    collector: assignedCollector?._id || null
   });
   await wasteRequest.save();
-  
 
+  const materialSummary = wasteData.materials.map((item, i) =>
+    `${i + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`
+  ).join('<br>');
 
-  // 🧾 Format material summary
-  const materialSummary = wasteData.materials.map((item, index) => {
-    return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
-  }).join('<br>');
-  // console.log(`${item.wasteType}`)
-
-  // 📧 Email to user 
   const subject = "New Waste Product Request 🚮🗑️";
   const html = `
     <h1>Hi ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
     <p>Thank you for submitting your waste request. Here's a summary of your materials:</p>
     <p>${materialSummary}</p>
     <p>Status: <strong>${wasteRequest.status}</strong></p>
-    <p>Points-Earned: ${reward.pointsEarned} pts </p>
-    <p>We'll notify you once a collector is assigned.</p>
+    <p>Points-Earned: ${reward.pointsEarned} pts</p>
+    <p>Collector-Assigned: ${
+      collectorUser
+        ? `${collectorUser.gender === "Male" ? "Mr" : collectorUser.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${collectorUser.name}`
+        : "Not yet assigned"
+    }.</p>
   `;
-  try {
   await sendEmail(user.email, subject, html);
-} catch (error) {
-  console.error('Email sending failed:', error.message);
-}
+
+  if (collectorUser?.email) {
+    const collectorSubject = "New Waste Request Assigned 🚛";
+    const collectorHtml = `
+      <h1>Hi ${collectorUser.gender === "Male" ? "Mr" : collectorUser.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${collectorUser.name},</h1>
+      <p>A new waste request has been assigned to you in <strong>${assignedCollector.serviceArea}</strong>.</p>
+      <p>Please check your dashboard for details.</p>
+    `;
+    await sendEmail(collectorUser.email, collectorSubject, collectorHtml);
+  }
+
   return wasteRequest;
 };
 
@@ -313,8 +329,31 @@ export const getCollectorStat = async (collectorAssayId) => {
     collector: collectorAssayId
   }).populate('collector',"assayDate totalQuantityCollected acceptedRequests rejectedRequests materials" )
   .populate('user', 'name email phoneNumber'); 
+  const filteredStat = collectorStat
+    .map(item => {
+      if (item.collector) {
+        const {
+          assayDate,
+          totalQuantityCollected,
+          acceptedRequests,
+          rejectedRequests,
+          materials
+        } = item.collector;
 
-  return collectorStat;
+        return {
+          assayDate,
+          totalQuantityCollected,
+          acceptedRequests,
+          rejectedRequests,
+          materials
+        };
+      }
+      return null;
+    })
+    .filter(stat => stat !== null); 
+
+  return filteredStat;
+
 };
 
 

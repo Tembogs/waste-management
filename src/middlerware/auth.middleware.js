@@ -43,3 +43,10 @@ export const isCollector = (req, res, next) => {
   }
   next();
 };
+
+export const isHouser =(req, res, next) => {
+  if (req.user.role !== "Houser"){
+   return res.status(403).json({message: "Access denied"});
+  }
+   next();
+}

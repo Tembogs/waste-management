@@ -1,19 +1,20 @@
 
 import { Router } from "express";
-import {createNewWaste,fetchAllWasteEntries,fetchWasteEntryById,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest} from "../controller/waste.controllers.js";
-import { isCollector, protect } from "../middlerware/auth.middleware.js";
+import {createNewWaste,fetchAllWasteEntries,fetchWasteEntryById,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView} from "../controller/waste.controllers.js";
+import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 const router = Router();
 
-router.post("/", createNewWaste);
-router.get("/", fetchAllWasteEntries);
-router.get("/:id", fetchWasteEntryById);
-router.get("/status/:id", protect,viewWasteStatus);
-router.put("/:id", editWaste);
-router.delete("/:id", removeWasteEntry);
+router.post("/",protect, createNewWaste);
+router.get("/",protect,admin, fetchAllWasteEntries);
+router.get("/:id",protect, isHouser, fetchWasteEntryById);
+router.get("/status/:id", protect,isHouser, viewWasteStatus);
+router.put("/:id",protect, isHouser, editWaste);
+router.delete("/:id",protect, isHouser, removeWasteEntry);
 
 // Collector Section
 router.post("/accept",protect,isCollector,acceptWasteRequest);
 router.post("/reject",protect,isCollector,rejectWasteRequest);
+router.get("/collector/view",protect,isCollector,collectorView);
 
 export default router;

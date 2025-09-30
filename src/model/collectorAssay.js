@@ -12,8 +12,8 @@ const collectorAssaySchema = new Schema({
     required: true
   },
   assayDate: {
-    type: Date,
-    default: Date.now
+    type: String,
+    default: () => dayjs().format('YYYY-MM-DD')
   },
   status: {
     type: String,

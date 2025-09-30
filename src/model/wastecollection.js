@@ -39,11 +39,6 @@ const wasteSchema = new Schema({
     },
     address: String
   },
-  collectionDate: {
-  type: String,
-  default: () => dayjs().format('YYYY-MM-DD'),
-  required: false
-},
 requestDate: {
   type: String,
   default: () => dayjs().format('YYYY-MM-DD')
