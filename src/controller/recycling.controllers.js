@@ -1,5 +1,5 @@
 
-import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry} from "../services/recycling.service.js";
+import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService} from "../services/recycling.service.js";
 
 export const createNewRecycle = async (req, res) => {
   try {
@@ -63,3 +63,25 @@ export const removeRecycleEntry = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// Collector Section
+
+export const acceptRecycleRequest = async (req, res) => {
+  const {recycleId, collectorAssayId}= req.body
+  try{
+    const acceptedRecycle = await acceptRecycleRequestService(recycleId, collectorAssayId);
+    res.status(200).json(acceptedRecycle);
+  }catch(error){
+    res.status(400).json({message:error.message})
+  }
+}
+
+export const rejectRecycleRequest = async (req, res) => {
+  const {recycleId, collectorAssayId, rejectionReason} = req.body
+  try{
+    const rejectedRecycle = await rejectRecycleRequestService(recycleId, collectorAssayId, rejectionReason);
+    res.status(200).json(rejectedRecycle);
+  }catch(error){
+    res.status(400).json({message: error.message})
+  }
+}

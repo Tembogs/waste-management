@@ -98,15 +98,12 @@ export const rejectWasteRequest = async (req, res) => {
 
 export const collectorView = async (req, res) => {
   try {
-    const collectorAssay = await CollectorAssay.findOne({ user: req.user.id });
-    if (!collectorAssay) {
+    const collectorDet = await getCollectorStat(req.params.id);
+     if (!collectorDet) {
       return res.status(404).json({ message: "CollectorAssay not found for this user" });
     }
-
-    const collectorDet = await getCollectorStat(collectorAssay._id);
     res.status(200).json(collectorDet);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 }
-

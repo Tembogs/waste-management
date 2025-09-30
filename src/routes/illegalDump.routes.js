@@ -1,14 +1,21 @@
 import { Router } from "express";
 
-import {reportNewILLegalDump, fetchAllIllegalEntries ,fetchAllIllegalEntryById,viewIllegalStatus,editIllegalEntryById,removeIllegalEntry} from "../controller/illegalDump.controller.js";
-import { admin, isHouser, protect } from "../middlerware/auth.middleware.js";
+import {reportNewILLegalDump, fetchAllIllegalEntries ,fetchAllIllegalEntryById,viewIllegalStatus,editIllegalEntryById,removeIllegalEntry, 
+        acceptIllegalDumpRequest, rejectIllegalDumpRequest
+      } from "../controller/illegalDump.controller.js";
+import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
+
 
 const router = Router();
 
-router.post("/", reportNewILLegalDump);
+router.post("/",protect, isHouser, reportNewILLegalDump);
 router.get("/", protect, admin, fetchAllIllegalEntries);
 router.get("/:id",protect, isHouser,  fetchAllIllegalEntryById);
 router.get("/status/:id", protect, viewIllegalStatus);
 router.put("/:id",protect, isHouser,  editIllegalEntryById);
 router.delete("/:id",protect, isHouser,  removeIllegalEntry);
+
+// Collector Section
+router.post("/accept",protect,isCollector,acceptIllegalDumpRequest);
+router.post("/reject",protect,isCollector, rejectIllegalDumpRequest);
 export default router;

@@ -31,4 +31,9 @@ export const updateUser = async(id, updateInfo) => {
   const user = await User.findByIdAndUpdate(id, updateInfo, {new: true})
   return user;
 }
-
+ export const signOutUser = async (id) => {
+  const user = await User.findById(id);
+  if (!user) {
+    throw new Error("User not found");
+  } 
+}

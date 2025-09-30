@@ -1,4 +1,4 @@
-import{reportIllegalDump,getAllIllegalEntries,getIllegalEntryById,updateIllegalEntryById, getillegalStatus, deleteIllegalEntry} from "../services/illegalDumping.services.js";
+import{reportIllegalDump,getAllIllegalEntries,getIllegalEntryById,updateIllegalEntryById, getillegalStatus, deleteIllegalEntry, acceptDumpRequestService, rejectDumpRequestService} from "../services/illegalDumping.services.js";
 
 export const reportNewILLegalDump = async(req,res) => {
   try{
@@ -36,7 +36,7 @@ export const fetchAllIllegalEntryById = async (req,res) => {
 
 export const editIllegalEntryById = async (req,res) => {
   try{
-    const updatedIllegalEntry = await updateIllegalEntryById(req.params.id);
+    const updatedIllegalEntry = await updateIllegalEntryById(req.params.id, req.body);
     res.status(200).json(updatedIllegalEntry)
   }catch(error){
     res.status(400).json({message:error.message})
@@ -63,4 +63,26 @@ export const removeIllegalEntry = async (req,res) => {
   }catch(error){
     res.status(400).json({message:error.message})
   }  
+}
+
+// cOllector Section
+
+export const acceptIllegalDumpRequest = async (req, res) => {
+  const { dumpId, collectorAssayId } = req.body;
+  try {
+    const acceptedDump = await acceptDumpRequestService(dumpId, collectorAssayId);
+    res.status(200).json(acceptedDump);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  } 
+}
+
+export const rejectIllegalDumpRequest = async (req, res) => {
+  const { dumpId, collectorAssayId, rejectionReason } = req.body;
+  try {
+    const rejectedDump = await rejectDumpRequestService(dumpId, collectorAssayId, rejectionReason);
+    res.status(200).json(rejectedDump);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 }
