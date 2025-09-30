@@ -1,26 +1,29 @@
 import {Schema, model} from "mongoose";
+import dayjs from 'dayjs';
 
 const wasteSchema = new Schema({
-  user:{
+  user: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: true,
+    index: true
   },
-  materials:[
-    {
-      wasteType: {
-        type: String,
-        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General',
-        required: true
-      },
-      quantity: Number,
-      unit: {
-        type: String,
-        enum: ['kg', 'items', 'liters'],
-        default: 'kg'
+  materials: {
+    type: [
+      {
+        wasteType: {
+          type: String,
+          enum: ['General', 'Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
+          default: 'General',
+          required: true
+        },
+        quantity: Number,
+        unit: {
+          type: String,
+          enum: ['kg', 'items', 'liters'],
+          default: 'kg'
+        }
       }
-<<<<<<< Updated upstream
     ],
     required: true,
     validate: [val => val.length > 0, 'At least one material is required']
@@ -41,15 +44,13 @@ requestDate: {
   default: () => dayjs().format('YYYY-MM-DD')
 }
 ,
-=======
-    }
-  ],
->>>>>>> Stashed changes
 
-  status:{
+  images: [String],
+  status: {
     type: String,
     enum: ['Pending', 'Accepted', 'Rejected', 'En Route', 'Collected'],
-    default: "Pending"
+    default: "Pending",
+    index: true
   },
   rejectionReason: String,
   Reward:{ 
@@ -57,11 +58,11 @@ requestDate: {
     ref: "Reward" 
   },
 
- collector: { 
-  type:Schema.Types.ObjectId, 
-  ref: 'User' 
-}
-
-}, {timestamps: true})
+  collector: {
+    type: Schema.Types.ObjectId,
+    ref: 'CollectorAssay',
+    index: true
+  }
+}, { timestamps: true });
 const Waste = model("Waste", wasteSchema)
 export default Waste;
