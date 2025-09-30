@@ -4,7 +4,8 @@ import { configDotenv } from 'dotenv';
 
 configDotenv();
 
-try {
+const startServer = async () => {
+  try {
    const conn = await connect(process.env.MONGO_URI);
   console.log(`MongoDb: ${conn.connection.host}`);
 }
@@ -17,3 +18,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+}
+
+startServer()

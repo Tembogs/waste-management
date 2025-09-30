@@ -6,11 +6,11 @@ import wasteRoutes from './routes/waste.routes.js';
 import authRouter from './routes/auth.routes.js';
 import recycleRoutes from './routes/recycle.routes.js';
 import illegalDumpRoutes from './routes/illegalDump.routes.js';
-
 const app = express();
 dotenv.config();
 setUpMiddlewares(app);
 
+app.use(cors({ origin: 'http://localhost:5173'}));
 app.use('/api/users', userRoutes);
 app.use('/api/waste', wasteRoutes);
 app.use('/api/auth', authRouter);
