@@ -1,13 +1,16 @@
 import CollectorAssay from "../model/collectorAssay.js";
 import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat} from "../services/waste.services.js";
 
+
 export const createNewWaste = async (req, res) => {
   try {
     const userId = req.user._id; // securely extracted from auth middleware
     const wasteData = { ...req.body, userId }; // inject userId into the payload
 
     const wasteRequest = await createWasteRequest(wasteData);
-    res.status(201).json(wasteRequest);
+    res.status(201).json({success: true, message: "request successfully created", data: wasteRequest
+
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

@@ -39,9 +39,12 @@ export const createWasteRequest = async (wasteData) => {
     activityType: "WasteRequest"
   });
   await reward.save();
+
+  console.log("wdl", wasteData.location);
+  
    
 
-  const normalizedLocation = wasteData.location?.trim().toLowerCase();
+  const normalizedLocation = wasteData.location.address?.trim().toLowerCase();
   const assignedCollector = await CollectorAssay.findOne({
     serviceArea: normalizedLocation
   });
@@ -55,14 +58,16 @@ export const createWasteRequest = async (wasteData) => {
     user.Reward = rewardArray.reduce((total, value) => total + value, 0);
     await user.save();
 
+    console.log("wdl",wasteData.location)
+
 
   const wasteRequest = new Waste({
     user: user._id,
     materials: wasteData.materials,
-    location: wasteData.location,
+    location: wasteData.location.address,
+    images: images,
     requestDate: wasteData.requestDate,
-    notes: wasteData.notes,
-    images: wasteData.images,
+    notes: wasteData.notes, 
     status: wasteData.status,
     Reward: reward._id,
     collector: assignedCollector?._id || null

@@ -14,10 +14,16 @@ export const register = async (req, res) => {
 
 
 export const login = async (req, res) => {
-    const { email, password } = req.body;
-    const user = await authServices.login(email, password);
-    if(!user){
+    try{
+      const { email, password } = req.body;
+      const user = await authServices.login(email, password);
+      if(!user){
         return res.status(400).json({message: `incorrect email or password`});
+      }
+        res.status(200).json(user);
+
+    }catch(error){
+      console.log('login error', error)
+      res.status(500).json({message: "internal server error"})
     }
-    res.status(200).json(user);
 }; 
