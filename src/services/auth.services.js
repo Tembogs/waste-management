@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import User from "../model/user.js";
-import { createUser } from "./user.services.js";
 import bcrypt from "bcrypt";
 import { sendEmail } from './email.services.js';
 import CollectorAssay from "../model/collectorAssay.js";
@@ -57,6 +56,9 @@ export const register = async (name, email, password, phoneNumber, role, locatio
     return null;
   }
 };
+
+
+
 export const login = async (email, password) => {
   try {
     const user = await User.findOne({ email });

@@ -8,6 +8,11 @@ const illegalDumpSchema = new Schema({
     ref: "User",
     required: true
   },
+  collector: {
+        type: Schema.Types.ObjectId,
+        ref: 'CollectorAssay',
+        index: true
+      },
   
   location: {
     type: String,
@@ -15,7 +20,7 @@ const illegalDumpSchema = new Schema({
   },
   materials:[
     {
-      wasteType: {
+      dumpType: {
         type: String,
         enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
         default: 'General',
@@ -45,12 +50,12 @@ const illegalDumpSchema = new Schema({
   
   reportDate: {
      type: String,
-    default: () => dayjs().format('YYYY-MM-DD')
+    default: () => dayjs().format('DD-MM-YYYY')
   },
 
   status: {
     type: String,
-    enum: ['Pending', 'In Review', 'Resolved'],
+    enum: ['Pending', 'InReview', "Cancelled", 'Resolved'],
     default: 'Pending'
   },
    Reward:{ 

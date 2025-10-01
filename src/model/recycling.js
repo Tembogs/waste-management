@@ -1,6 +1,11 @@
 import {Schema, model} from "mongoose";
 import dayjs from "dayjs";
 const recyclingSchema = new Schema({
+  collector: {
+      type: Schema.Types.ObjectId,
+      ref: 'CollectorAssay',
+      index: true
+    },
   user: {
     type: Schema.Types.ObjectId,
     ref: "User",
@@ -8,7 +13,7 @@ const recyclingSchema = new Schema({
   },
   materials:[
     {
-      wasteType: {
+      recycleType: {
         type: String,
         enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
         default: 'General',
@@ -27,7 +32,7 @@ const recyclingSchema = new Schema({
   ],
   recyclingDate: { 
      type: String,
-    default: () => dayjs().format('YYYY-MM-DD')
+    default: () => dayjs().format('DD-MM-YYYY')
   },
    status:{
     type: String,

@@ -401,36 +401,22 @@ export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejec
 
 
 export const getCollectorStat = async (collectorAssayId) => {
-  const collectorStat = await Waste.find({
-    collector: collectorAssayId
-  }).populate('collector',"assayDate totalQuantityCollected acceptedRequests rejectedRequests materials" )
-  .populate('user', 'name email phoneNumber'); 
-  const filteredStat = collectorStat
-    .map(item => {
-      if (item.collector) {
-        const {
-          assayDate,
-          totalQuantityCollected,
-          acceptedRequests,
-          rejectedRequests,
-          materials
-        } = item.collector;
+  const collector = await CollectorAssay.findById(collectorAssayId).select(
+    "assayDate totalQuantityCollected acceptedRequests rejectedRequests"
+  );
 
-        return {
-          assayDate,
-          totalQuantityCollected,
-          acceptedRequests,
-          rejectedRequests,
-          materials
-        };
-      }
-      return null;
-    })
-    .filter(stat => stat !== null); 
+  if (!collector) return null;
 
-  return filteredStat;
+  const { assayDate, totalQuantityCollected, acceptedRequests, rejectedRequests } = collector;
 
+  return {
+    assayDate,
+    totalQuantityCollected,
+    acceptedRequests,
+    rejectedRequests
+  };
 };
+
 
 
 

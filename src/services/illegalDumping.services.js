@@ -2,6 +2,8 @@ import IllegalDump from "../model/illegalDump.js";
 import Reward from "../model/rewards.js";
 import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
+import CollectorAssay from "../model/collectorAssay.js";
+import mongoose from "mongoose";
 
 
 export const reportIllegalDump = async (illegalData) => {
@@ -24,7 +26,7 @@ export const reportIllegalDump = async (illegalData) => {
          const calculatePoints = (materials) => {
           let totalPoints = 0;
           materials.forEach(item => {
-            const basePoints = materialPoints[item.wasteType] || 0;
+            const basePoints = materialPoints[item.dumpType] || 0;
             const itemPoints = basePoints * item.quantity;
             const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
             totalPoints += itemPoints * bonusMultiplier;
@@ -35,13 +37,26 @@ export const reportIllegalDump = async (illegalData) => {
         const pointsEarned = calculatePoints(illegalData.materials);
         
         const reward = new Reward({
-          user: user._id,
-          pointsEarned,
-          rewardItem: "Waste Request Bonus 💫✨",
-          activityType: "WasteRequest"
-        });
-        
-        await reward.save();
+      user: user._id,
+      pointsEarned,
+      rewardItem: "Illegal Dumping Report Request Bonus 💫✨",
+      activityType: "IllegalDumpReport"
+    });
+    
+    await reward.save();
+
+     const normalizedLocation = illegalData.location?.trim().toLowerCase();
+      const assignedCollector = await CollectorAssay.findOne({
+        serviceArea: normalizedLocation
+      });
+    
+      let collectorUser = null;
+      if (assignedCollector) {
+        collectorUser = await User.findById(assignedCollector.user).select("email name gender serviceArea");
+      }
+       const rewardArray = [user.Reward || 0, pointsEarned];
+        user.Reward = rewardArray.reduce((total, value) => total + value, 0);
+        await user.save();
 
     const illegalRequest = new IllegalDump({
       reporter: user._id,
@@ -50,30 +65,48 @@ export const reportIllegalDump = async (illegalData) => {
       location: illegalData.location,
       status: illegalData.status || "Pending",
       reportDate: new Date(),
-      Reward:reward._id
+      Reward:reward._id,
+      collector: assignedCollector?._id || null
     });
 
     await illegalRequest.save();
-
+   const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
     const materialSummary = illegalData.materials.map((item, index) => {
-      return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
+      return `${index + 1}. ${item.quantity} ${item.unit} of ${item.dumpType}`;
     }).join('<br>');
 
     // 📧 Email to user
     const subject = "🚨 Illegal Dump Report Received";
     const html = `
-      <h1>Hello ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
+      <h1>Hello ${genTitle(user.gender)} ${user.name},</h1>
       <p>Thanks for reporting an illegal dumping incident. Here's what we received:</p>
       <p><strong>Location:</strong> ${illegalRequest.location}</p>
       <p><strong>Description:</strong> ${illegalRequest.description}</p>
       <p><strong>Materials:</strong><br>${materialSummary}</p>
       <p><strong>Status:</strong> ${illegalRequest.status}</p>
       <p><em>Reported on: ${illegalRequest.reportDate.toLocaleString()}</em></p>
-      <p>We'll notify you once a collector is assigned.</p>
+       <p>Points-Earned: ${reward.pointsEarned} pts </p>
+           <p>Total Points-Earned: ${user.Reward} </p>
+       <p>Collector-Assigned: ${
+      collectorUser
+        ? `${ genTitle(collectorUser.gender)} ${collectorUser.name}`
+        : "Not yet assigned"
+    }.</p>
     `;
 
     await sendEmail(user.email, subject, html);
     console.log(`Email sent to ${user.email}`);
+
+     // 📧 Email to assigned collector
+         if (collectorUser?.email) {
+            const collectorSubject = "Newillegal dumping report Request Assigned 🚛";
+            const collectorHtml = `
+              <h1>Hi ${ genTitle(collectorUser.gender)} ${collectorUser.name},</h1>
+              <p>A new dumping report request has been assigned to you in <strong>${assignedCollector.serviceArea}</strong>.</p>
+              <p>Please check your dashboard for details.</p>
+            `;
+            await sendEmail(collectorUser.email, collectorSubject, collectorHtml);
+          }
 
     return illegalRequest;
   } catch (error) {
@@ -120,7 +153,7 @@ export const updateIllegalEntryById = async (id, status) => {
         const calculatePoints = (materials) => {
           let totalPoints = 0;
           materials.forEach(item => {
-            const basePoints = materialPoints[item.wasteType] || 0;
+            const basePoints = materialPoints[item.dumpType] || 0;
             const itemPoints = basePoints * item.quantity;
             const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
             totalPoints += itemPoints * bonusMultiplier;
@@ -139,14 +172,16 @@ export const updateIllegalEntryById = async (id, status) => {
       }
     
       // Format material summary
-      const materialSummary = updates.materials?.map((item, index) => {
-  return `${index + 1}. ${item.quantity} ${item.unit || 'units'} of ${item.wasteType}`;
-}).join('<br>') || 'No materials listed';
+      const materialSummary =updates.materials?.map((item, index) => {
+          return `${index + 1}. ${item.quantity} ${item.unit || 'units'} of ${item.dumpType}`;
+        }).join('<br>') || 'No materials listed';
+
     
       // Compose email
+      const genTitle = (gender)=> gender === "Male" ? "Mr" : gender ==="Female" ? "Mrs/Miss" : "Mx"
       const subject = "New Illegal Request ♻️";
       const html = `
-        <h1>Hi ${illegalEntry.reporter.gender === "Male" ? "Mr" : illegalEntry.reporter.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${illegalEntry.reporter.name} 👋</h1>
+        <h1>Hi ${genTitle(illegalEntry.reporter.gender)} ${illegalEntry.reporter.name} 👋</h1>
         <p>Thanks for updating your Illegal request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
         <p>Here’s a quick summary of your latest request:</p>
         <p>${materialSummary}</p>
@@ -184,5 +219,138 @@ export const getillegalStatus = async (userId) => {
 
 export const deleteIllegalEntry = async (id) => {
   const illegalEntry = await IllegalDump.findByIdAndDelete(id);
+      if (!illegalEntry) return null;
+    
+      if (illegalEntry.Reward) {
+        await Reward.findByIdAndDelete(illegalEntry.Reward);
+      }
+      await IllegalDump.findByIdAndDelete(id);
   return illegalEntry;
 } 
+
+
+// Collector- Section
+export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const dump = await IllegalDump.findById(dumpId).session(session);
+    if (!dump) throw new Error("IllegalDump report request not found");
+    if (dump.status === "In Review" || dump.status === "Resolved") {
+      throw new Error("IllegalDump report request has already been processed");
+    }
+
+    const user = await User.findById(dump.reporter).select("name email gender").session(session);
+    if (!user) throw new Error("User not found");
+
+    const assay = await CollectorAssay.findById(collectorAssayId).session(session);
+    if (!assay) throw new Error("Collector assay not found");
+
+    // Update dump
+    dump.status = "InReview";
+    dump.collector = collectorAssayId;
+    await dump.save({ session });
+
+    // Update assay
+    assay.status = "Accepted";
+    assay.acceptedRequests += 1;
+
+    dump.materials.forEach(({ dumpType, quantity }) => {
+  
+      const stat = assay.collectionStats.find(s => s.dumpType === dumpType);
+
+      if (stat) {
+        stat.quantityCollected += quantity;
+        stat.updatedAt = new Date();
+      } else {
+        assay.collectionStats.push({
+          dumpType: dumpType,
+          quantityCollected: quantity,
+          updatedAt: new Date()
+        });
+      }
+    });
+
+    assay.totalQuantityCollected += dump.materials.reduce((sum, m) => sum + m.quantity, 0);
+    await assay.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+     const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+    // Compose and send email after transaction
+    const subject = "IllegalDump report Request Accepted ✅";
+    const html = `
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+      <p>Your dumbing report request has been accepted! A collector is on the way to pick up your materials.</p>
+      <p>Thank you for contributing to a cleaner environment! 🌍♻️</p>
+      <p>If you have any questions, feel free to reply to this email 📩.</p>
+    `;
+    await sendEmail(user.email, subject, html);
+
+    return dump;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error accepting dumping report request:", error.message);
+    throw new Error("Failed to accept dumping report request. Please try again.");
+  }
+};
+
+
+export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejectionReason = "") => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const dumb = await IllegalDump.findById(dumbId).session(session);
+    if (!dumb) throw new Error("illegal dumbing report request not found");
+    if (dumb.status === "Accepted" || dumb.status === "Rejected") {
+      throw new Error("illegal dumbing report request has already been processed");
+    }
+    if (!rejectionReason || rejectionReason.trim() === "") {
+      throw new Error("Rejection reason is required when rejecting a recycle request");
+    }
+
+    const user = await User.findById(dumb.reporter).select("name email gender").session(session);
+    if (!user) throw new Error("User not found");
+
+    const assay = await CollectorAssay.findById(collectorAssayId ).session(session);
+    console.log("Looking for CollectorAssay ID:", collectorAssayId);
+
+    if (!assay) throw new Error("Collector assay not found");
+
+    // Update dumb
+    dumb.status = "Cancelled";
+    dumb.collector = null;
+    dumb.rejectionReason = rejectionReason;
+    await dumb.save({ session });
+
+    // Update assay
+    assay.status = "Rejected";
+    assay.rejectedRequests += 1;
+    await assay.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Compose and send email after transaction
+    const genTitle = (gender)=> gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+    const subject = "IllegalDump report Request Request Rejected ❌";
+    const html = `
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+      <p>We're sorry to inform you that your recent illegal dumbing report request has been rejected.</p>
+      <p><strong>Reason:</strong> ${rejectionReason}</p>
+      <p>You can review your request and submit a new one if needed.</p>
+      <p>Thank you for your continued efforts toward a cleaner environment 🌍.</p>
+    `;
+    await sendEmail(user.email, subject, html);
+
+    return dump;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error rejecting illegal dumping report request:", error.message);
+    throw new Error("Failed to reject illegal dumping report request. Please try again.");
+  }
+};
