@@ -50,3 +50,11 @@ export const isHouser =(req, res, next) => {
   }
    next();
 }
+
+export const isBoth = (req, res, next) => {
+    if (req.user.role === "Houser" || req.user.role === "Collector") {
+      return next();
+    } else {
+      return res.status(403).json({ message: "Access denied" });
+    }
+  };

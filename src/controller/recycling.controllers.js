@@ -84,4 +84,14 @@ export const rejectRecycleRequest = async (req, res) => {
   }catch(error){
     res.status(400).json({message: error.message})
   }
-}
+};
+
+// export const deleteRecyclingRequest = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     await deleteRecyclingRequest(id);
+//     res.status(200).json({ message: 'Recycling request deleted successfully' });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
