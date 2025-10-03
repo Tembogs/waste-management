@@ -24,20 +24,9 @@ const wasteSchema = new Schema({
           default: 'kg'
         }
       }
-    ],
-    required: true,
-    validate: [val => val.length > 0, 'At least one material is required']
-  },
+    ]},
   location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      
-    },
-    coordinates: {
-      type: [Number],
-    },
-    address: String
+    type:String
   },
 requestDate: {
   type: String,
