@@ -21,3 +21,7 @@ export const login = async (req, res) => {
     }
     res.status(200).json(user);
 }; 
+
+// export const logout = async (req, res) => {
+//   const 
+// }

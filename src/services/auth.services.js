@@ -5,6 +5,8 @@ import { sendEmail } from './email.services.js';
 import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
 
+ const genTitle = (gender) => gender === 'Male' ? "Mr" : gender === "Female" ?"Mrs/Miss" : "Mx"
+
 export const register = async (name, email, password, phoneNumber, role, location, gender) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -40,7 +42,7 @@ export const register = async (name, email, password, phoneNumber, role, locatio
 
     const subject = "Welcome to WasteWise! System Nigeria";
     const html = `
-      <h1>Hi ${gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'} ${name},</h1>
+      <h1>Hi ${genTitle(gender)} ${name},</h1>
       <p>Thank you for registering. We're excited to have you.</p>
     `;
     await sendEmail(email, subject, html);
@@ -71,7 +73,7 @@ export const login = async (email, password) => {
       expiresIn: "1h"
     });
 
-    const subject = `Welcome back ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name}`;
+    const subject = `Welcome back ${genTitle(user.gender)} ${user.name}`;
     const html = `
       <h1>Hi ${user.name},</h1>
       <p>Thank you for getting back into the app with the intention to make our environment clean. We're excited to have you.</p>
@@ -82,5 +84,26 @@ export const login = async (email, password) => {
   } catch (error) {
     console.error("Login error:", error.message);
     return { error: "Login failed" };
+  }
+};
+
+
+export const logout = async (req, res) => {
+  try {
+    // If you're using cookies to store JWT
+    res.clearCookie("token");
+    res.status(200).json({ message: "Successfully signed out" });
+
+    // Optionally, send a goodbye email
+    const user = req.user; 
+    const subject = `Goodbye ${genTitle(user.gender)} ${user.name}`;
+    const html = `
+      <h1>Hi ${user.name},</h1>
+      <p>You've successfully signed out. We hope to see you again soon!</p>
+    `;
+    await sendEmail(user.email, subject, html);
+  } catch (error) {
+    console.error("Logout error:", error.message);
+    res.status(500).json({ error: "Logout failed" });
   }
 };
