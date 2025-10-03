@@ -27,7 +27,3 @@ export const login = async (req, res) => {
       res.status(500).json({message: "internal server error"})
     }
 }; 
-
-// export const logout = async (req, res) => {
-//   const 
-// }
