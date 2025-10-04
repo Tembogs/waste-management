@@ -55,13 +55,14 @@ const illegalDumpSchema = new Schema({
 
   status: {
     type: String,
-    enum: ['Pending', 'InReview', "Cancelled", 'Resolved'],
+    enum: ['Pending', 'InReview', "Rejected", 'Resolved'],
     default: 'Pending'
   },
    Reward:{ 
       type: Schema.Types.ObjectId, 
       ref: "Reward" 
     },
+    rejectionReason: String
 }, {timestamps: true})
 const IllegalDump = model("IllegalDump", illegalDumpSchema)
 export default IllegalDump;

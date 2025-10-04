@@ -1,5 +1,5 @@
 import CollectorAssay from "../model/collectorAssay.js";
-import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat} from "../services/waste.services.js";
+import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat, collectWasteRequest, routecollectorService} from "../services/waste.services.js";
 
 
 export const createNewWaste = async (req, res) => {
@@ -108,5 +108,25 @@ export const collectorView = async (req, res) => {
     res.status(200).json(collectorDet);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+}
+
+export const routeWasteRequest = async (req, res) => {
+  const { wasteId, collectorAssayId } = req.body;
+  try{
+   const route = await routecollectorService(wasteId, collectorAssayId);
+    res.status(200).json({ message: "Waste request en routed", data: route })
+  }catch(error){
+    res. status(400).json({error: error.message})
+  }
+}
+
+export const collectWasteRquest = async (req, res) => {
+  const {wasteId, collectorAssayId}= req.body;
+  try{
+   const collect = await collectWasteRequest(wasteId, collectorAssayId)
+   res.status(200).json({mesaage: "Waste request collected", data: collect})
+  }catch(error){
+  res.status(400).json({error: error.message})
   }
 }

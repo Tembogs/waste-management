@@ -34,7 +34,7 @@ requestDate: {
 }
 ,
 
-  images: [String],
+  images: String,
   status: {
     type: String,
     enum: ['Pending', 'Accepted', 'Rejected', 'En Route', 'Collected'],

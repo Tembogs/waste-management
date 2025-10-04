@@ -34,16 +34,17 @@ const recyclingSchema = new Schema({
      type: String,
     default: () => dayjs().format('DD-MM-YYYY')
   },
-   status:{
+  status:{
     type: String,
     enum: ['Pending', 'Accepted', 'Rejected', 'En Route', 'Collected'],
     default: "Pending"
-  },
+    },
   location: String,
    Reward:{ 
       type: Schema.Types.ObjectId, 
       ref: "Reward" 
     },
+    rejectionReason: String,
 }, {timestamps: true})
 const Recycling = model("Recycling", recyclingSchema)
 export default Recycling;

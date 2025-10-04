@@ -1,6 +1,6 @@
 
 import { Router } from "express";
-import {createNewWaste,fetchAllWasteEntries,fetchWasteEntryById,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView} from "../controller/waste.controllers.js";
+import {createNewWaste,fetchAllWasteEntries,fetchWasteEntryById,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest} from "../controller/waste.controllers.js";
 import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 const router = Router();
@@ -16,5 +16,7 @@ router.delete("/:id",protect, isHouser, removeWasteEntry);
 router.post("/accept",protect,isCollector,acceptWasteRequest);
 router.post("/reject",protect,isCollector,rejectWasteRequest);
 router.get("/collector/:id",protect,isCollector,collectorView);
+router.post("/route", protect, isCollector, routeWasteRequest)
+router.post("/collect", protect, isCollector, collectWasteRquest)
 
 export default router;

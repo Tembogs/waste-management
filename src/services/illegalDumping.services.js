@@ -6,6 +6,8 @@ import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
 
 
+const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+
 export const reportIllegalDump = async (illegalData) => {
   try {
     const user = await User.findById(illegalData.userId).select("name email phoneNumber gender");
@@ -99,7 +101,7 @@ export const reportIllegalDump = async (illegalData) => {
 
      // 📧 Email to assigned collector
          if (collectorUser?.email) {
-            const collectorSubject = "Newillegal dumping report Request Assigned 🚛";
+            const collectorSubject = "New illegal dumping report Request Assigned 🚛";
             const collectorHtml = `
               <h1>Hi ${ genTitle(collectorUser.gender)} ${collectorUser.name},</h1>
               <p>A new dumping report request has been assigned to you in <strong>${assignedCollector.serviceArea}</strong>.</p>
@@ -233,15 +235,19 @@ export const deleteIllegalEntry = async (id) => {
 export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let committed = false;
 
   try {
     const dump = await IllegalDump.findById(dumpId).session(session);
     if (!dump) throw new Error("IllegalDump report request not found");
-    if (dump.status === "In Review" || dump.status === "Resolved") {
+
+    if (["InReview", "Resolved", "Rejected"].includes(dump.status)) {
       throw new Error("IllegalDump report request has already been processed");
     }
 
-    const user = await User.findById(dump.reporter).select("name email gender").session(session);
+    const user = await User.findById(dump.reporter)
+      .select("name email gender")
+      .session(session);
     if (!user) throw new Error("User not found");
 
     const assay = await CollectorAssay.findById(collectorAssayId).session(session);
@@ -257,15 +263,13 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
     assay.acceptedRequests += 1;
 
     dump.materials.forEach(({ dumpType, quantity }) => {
-  
       const stat = assay.collectionStats.find(s => s.dumpType === dumpType);
-
       if (stat) {
         stat.quantityCollected += quantity;
         stat.updatedAt = new Date();
       } else {
         assay.collectionStats.push({
-          dumpType: dumpType,
+          dumpType,
           quantityCollected: quantity,
           updatedAt: new Date()
         });
@@ -276,23 +280,26 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
     await assay.save({ session });
 
     await session.commitTransaction();
+    committed = true;
     session.endSession();
-     const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+
     // Compose and send email after transaction
-    const subject = "IllegalDump report Request Accepted ✅";
+    const subject = "IllegalDump Report Request Under Review 🔍";
     const html = `
       <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
-      <p>Your dumbing report request has been accepted! A collector is on the way to pick up your materials.</p>
-      <p>Thank you for contributing to a cleaner environment! 🌍♻️</p>
-      <p>If you have any questions, feel free to reply to this email 📩.</p>
+      <p>We’ve received your illegal dumping report and it's currently under review by our team.</p>
+      <p>We appreciate your effort in helping maintain a cleaner environment! 🌍♻️</p>
+      <p>If you have any questions or additional details to share, feel free to reply to this email 📩.</p>
     `;
     await sendEmail(user.email, subject, html);
 
     return dump;
   } catch (error) {
-    await session.abortTransaction();
+    if (!committed) {
+      await session.abortTransaction();
+    }
     session.endSession();
-    console.error("Error accepting dumping report request:", error.message);
+    console.error(`Error accepting dump request ${dumpId} with assay ${collectorAssayId}:`, error.message);
     throw new Error("Failed to accept dumping report request. Please try again.");
   }
 };
@@ -301,27 +308,26 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
 export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejectionReason = "") => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let committed = false
 
   try {
     const dumb = await IllegalDump.findById(dumbId).session(session);
     if (!dumb) throw new Error("illegal dumbing report request not found");
-    if (dumb.status === "Accepted" || dumb.status === "Rejected") {
+    if (dumb.status === "In Review" || dumb.status === "Resolved") {
       throw new Error("illegal dumbing report request has already been processed");
     }
     if (!rejectionReason || rejectionReason.trim() === "") {
-      throw new Error("Rejection reason is required when rejecting a recycle request");
+      throw new Error("Rejection reason is required when rejecting a illegal dumbing report");
     }
 
     const user = await User.findById(dumb.reporter).select("name email gender").session(session);
     if (!user) throw new Error("User not found");
 
     const assay = await CollectorAssay.findById(collectorAssayId ).session(session);
-    console.log("Looking for CollectorAssay ID:", collectorAssayId);
-
     if (!assay) throw new Error("Collector assay not found");
 
     // Update dumb
-    dumb.status = "Cancelled";
+    dumb.status = "Rejected";
     dumb.collector = null;
     dumb.rejectionReason = rejectionReason;
     await dumb.save({ session });
@@ -332,11 +338,12 @@ export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejecti
     await assay.save({ session });
 
     await session.commitTransaction();
+    committed = true
     session.endSession();
 
     // Compose and send email after transaction
     const genTitle = (gender)=> gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
-    const subject = "IllegalDump report Request Request Rejected ❌";
+    const subject = "Illegal dumping report  Request Rejected ❌";
     const html = `
       <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
       <p>We're sorry to inform you that your recent illegal dumbing report request has been rejected.</p>
@@ -348,9 +355,67 @@ export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejecti
 
     return dump;
   } catch (error) {
-    await session.abortTransaction();
+   if (!committed)  {
+      await session.abortTransaction()
+    };
     session.endSession();
     console.error("Error rejecting illegal dumping report request:", error.message);
     throw new Error("Failed to reject illegal dumping report request. Please try again.");
   }
 };
+
+export const resolveDumpRequestService = async (dumbId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  let committed = false
+
+  try {
+     const dump = IllegalDump.findById(dumbId).session(session)
+     if(!dump) throw new Error ("dump request not found ")
+    if(!dump) throw new Error ("Recycle Not Found")
+    if (!["InReview"].includes(dump.status)) 
+      {
+        throw new Error("Dump hasn't been review");
+      }
+
+    if (["Resolved", "Rejected"].includes(dump.status)) {
+      throw new Error("Dump request has already been processed");
+    }
+    
+    const user = User.findById(dump.reporter).select("name email gender").session(session)
+    if(!user) throw new Error('User not found')
+
+    const assay = CollectorAssay.findById(collectorAssayId).session(session)
+    if(!assay) throw new Error("Collector not Fouund")
+
+    dump.status = "Resolved";
+    dump.collector = collectorAssayId;
+    await dump.save({session})
+
+    assay.status = "Collected";
+    await assay.save({session})
+
+    await session.commitTransaction();
+    committed = true
+    session.endSession();
+
+    const subject = "IllegalDump Report Request Resolved ✅";
+    const html = `
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+      <p>Great news! Your illegal dumping report has been successfully resolved. The reported materials have been collected and properly disposed of.</p>
+      <p>Thank you for taking action to keep our environment clean and safe! 🌍♻️</p>
+      <p>If you have any further concerns or need assistance, feel free to reply to this email 📩.</p>
+    `;
+    await sendEmail(user.email, subject, html);
+    
+  } catch (error) {
+      if(!committed){
+        await session.abortTransaction();
+      }
+    session.endSession();
+    console.error("Error in resolving dumping report request:", error.message);
+    throw new Error("Failed resolving dumping report request. Please try again.");
+    
+  }
+}

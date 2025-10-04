@@ -5,6 +5,8 @@ import Reward from "../model/rewards.js";
 import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
 
+const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+
 export const createRecycleRequest = async (recycleData) => {
   try {
     const user = await User.findById(recycleData.userId).select("name email phoneNumber gender");
@@ -230,11 +232,12 @@ export const updateRecycle = async (id, updateData) => {
 export const acceptRecycleRequestService = async (recycleId, collectorAssayId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let committed = false
 
   try {
     const recycle = await Recycling.findById(recycleId).session(session);
     if (!recycle) throw new Error("Recycle request not found");
-    if (recycle.status === "Accepted" || recycle.status === "Rejected") {
+    if (recycle.status === "Accepted" || recycle.status === "Rejected" || recycle.status === "En Route" || recycle.status === "Collected") {
       throw new Error("Recycle request has already been processed");
     }
 
@@ -273,6 +276,7 @@ export const acceptRecycleRequestService = async (recycleId, collectorAssayId) =
     await assay.save({ session });
 
     await session.commitTransaction();
+    committed = true
     session.endSession();
 
     // Compose and send email after transaction
@@ -287,7 +291,9 @@ export const acceptRecycleRequestService = async (recycleId, collectorAssayId) =
 
     return recycle;
   } catch (error) {
-    await session.abortTransaction();
+    if(!committed){
+      await session.abortTransaction();
+    }
     session.endSession();
     console.error("Error accepting recycle request:", error.message);
     throw new Error("Failed to accept recycle request. Please try again.");
@@ -298,13 +304,15 @@ export const acceptRecycleRequestService = async (recycleId, collectorAssayId) =
 export const rejectRecycleRequestService = async (recycleId, collectorAssayId, rejectionReason = "") => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
+  let committed = false
   try {
     const recycle = await Recycling.findById(recycleId).session(session);
     if (!recycle) throw new Error("Waste request not found");
-    if (recycle.status === "Accepted" || recycle.status === "Rejected") {
+
+    if (["Collected", "Rejected", "Accepted" ,"En Route"].includes(recycle.status)) {
       throw new Error("Recycle request has already been processed");
     }
+    
     if (!rejectionReason || rejectionReason.trim() === "") {
       throw new Error("Rejection reason is required when rejecting a recycle request");
     }
@@ -329,6 +337,7 @@ export const rejectRecycleRequestService = async (recycleId, collectorAssayId, r
     await assay.save({ session });
 
     await session.commitTransaction();
+    committed = true
     session.endSession();
 
     // Compose and send email after transaction
@@ -344,24 +353,144 @@ export const rejectRecycleRequestService = async (recycleId, collectorAssayId, r
 
     return recycle;
   } catch (error) {
-    await session.abortTransaction();
+    if(!committed){
+      await session.abortTransaction();
+    }
     session.endSession();
     console.error("Error rejecting recycle request:", error.message);
     throw new Error("Failed to reject recycle request. Please try again.");
   }
 };
 
-// export const deleteRecyclingRequest = async (id) => {
-//   try {
-//     const deletedRequest = await Recycling.findByIdAndDelete(id);
-//     if (!deletedRequest) {
-//       throw new Error('Recycling request not found');
-//     }
-//     return deletedRequest;
-//   } catch (error) {
-//     throw new Error(error.message);
-//   }
-// };
+export const routecollectorService = async (recycleId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  let committed = false
+ 
+  try{
+     const recycle = await Recycling.findById(recycleId).session(session)
+      console.log("Recycle status:", recycle.status);
+     if(!recycle) throw new Error ("Recycle Not Found")
+      if (!["Accepted"].includes(recycle.status)) {
+      throw new Error("Recycle hasn't been accepted");
+    }
+
+    if (["Collected", "Rejected", "En Route"].includes(recycle.status)) {
+      throw new Error("Recycle request has already been processed");
+    }
+    
+     const user = await User.findById(recycle.user).select("name email gender").session(session);
+     if(!user) throw new Error("User not found");
+
+     const assay = await CollectorAssay.findById(collectorAssayId).session(session);
+     if(!assay) throw new Error("Collector not found");
+
+     recycle.status ="En Route"
+     recycle.collector = collectorAssayId
+     await recycle.save({session});
+
+     assay.status = "En Route"
+    await assay.save({ session });
+
+    await session.commitTransaction();
+    committed = true
+    session.endSession();
+   
+    const subject = "Recycle Request En Route 🚚";
+    const html = `
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+      <p>Good news! Your recycle request is currently en route and will be handled shortly.</p>
+      <p><strong>Status:</strong> ${recycle.status}</p>
+      <p>Please ensure the recycle is accessible for collection at the specified location.</p>
+      <p>Thank you for your commitment to a cleaner and healthier environment 🌍.</p>
+    `;
+    await sendEmail(user.email, subject, html);
+
+    return recycle;
+
+  
+  }catch(error){
+    if(!committed){
+      await session.abortTransaction();
+    }
+    session.endSession();
+    console.error("Error en routing recycle request:", error.message);
+    throw new Error("Failed to route recycle request. Please try again.");
+  }
+}
+
+export const collectRecycleRequest = async (recycleId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  let committed = false
+  try{
+    const recycle = await Recycling.findById(recycleId).session(session);
+    if(!recycle) throw new Error("Recycle not found");
+    if (["Accepted"].includes(recycle.status)) {
+      throw new Error("Recycle hasn't been en route");
+    }
+
+    if (["Collected", "Rejected"].includes(recycle.status)) {
+      throw new Error("Recycle request has already been processed");
+    }
+    const user = await User.findById(recycle.user).select("name email gender").session(session)
+    if(!user) throw new Error("User not found")
+
+    const assay = await CollectorAssay.findById(collectorAssayId).session(session)
+    if(!assay) throw new Error("Collector not found")
+
+    recycle.status ="Collected"
+    recycle.collector = collectorAssayId
+    await recycle.save({session})
+
+    assay.status = "Collected"
+
+    recycle.materials.forEach(({ recycleType, quantity }) => {
+  
+      const stat = assay.collectionStats.find(s => s.recycleType === recycleType);
+
+      if (stat && recycle.status === "Collected") {
+        stat.quantityCollected += quantity;
+        stat.updatedAt = new Date();
+      } else {
+        assay.collectionStats.push({
+          recycleType: recycleType,
+          quantityCollected: quantity,
+          updatedAt: new Date()
+        });
+      }
+    });
+   assay.totalQuantityCollected += recycle.materials.reduce((sum, m) => sum + m.quantity, 0);
+   await assay.save({session})
+
+  await session.commitTransaction();
+  committed = true
+  session.endSession();
+
+  const subject = "Recycle Request Collected ✅";
+  const html = `
+    <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+    <p>We're pleased to inform you that your recycle request has been successfully collected.</p>
+    <p><strong>Status:</strong> ${recycle.status}</p>
+    <p><strong>Collection Time:</strong> ${new Date(assay.collectionDate).toLocaleString()}</p>
+    <p><strong>Location:</strong> ${assay.serviceArea}</p>
+    <p>We appreciate your commitment to a cleaner and healthier environment 🌍.</p>
+    <p>If you have a moment, we'd love to hear your feedback to help us improve our service.</p>
+    <p>You can submit a new request anytime through your dashboard.</p>
+  `;
+  await sendEmail(user.email, subject, html);
+
+  return recycle;
+
+  }catch(error){
+  if (!committed) { 
+    await session.abortTransaction()
+  }
+    session.endSession();
+    console.error("Error collecting recycle request:", error.message);
+    throw new Error("Failed to collect recycle request. Please try again.")
+  }
+}
 
 
 

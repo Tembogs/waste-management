@@ -1,4 +1,4 @@
-import{reportIllegalDump,getAllIllegalEntries,getIllegalEntryById,updateIllegalEntryById, getillegalStatus, deleteIllegalEntry, acceptDumpRequestService, rejectDumpRequestService} from "../services/illegalDumping.services.js";
+import{reportIllegalDump,getAllIllegalEntries,getIllegalEntryById,updateIllegalEntryById, getillegalStatus, deleteIllegalEntry, acceptDumpRequestService, rejectDumpRequestService, resolveDumpRequestService} from "../services/illegalDumping.services.js";
 
 export const reportNewILLegalDump = async(req,res) => {
   try{
@@ -74,8 +74,8 @@ export const acceptIllegalDumpRequest = async (req, res) => {
     res.status(200).json(acceptedDump);
   } catch (error) {
     res.status(400).json({ message: error.message });
-  } 
-}
+  }
+};
 
 export const rejectIllegalDumpRequest = async (req, res) => {
   const { dumpId, collectorAssayId, rejectionReason } = req.body;
@@ -84,5 +84,15 @@ export const rejectIllegalDumpRequest = async (req, res) => {
     res.status(200).json(rejectedDump);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+}
+
+export const resolveDumpingRequest = async (req, res) => {
+  const {dumbId, collectorAssayId} = req.body
+  try{
+     const resolveDump = await resolveDumpRequestService(dumbId, collectorAssayId)
+     res.status(200).json(resolveDump)
+  }catch(error){
+   res.status(400).json({message:error.message})
   }
 }

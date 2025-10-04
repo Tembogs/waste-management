@@ -18,7 +18,7 @@ const collectorAssaySchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['Accepted', 'Rejected', 'EnRoute', 'Collected'],
+    enum: ['Accepted', 'Rejected', 'En Route', 'Collected'],
     default: "Rejected"
   },
   rejectionReason: {
@@ -75,6 +75,10 @@ const collectorAssaySchema = new Schema({
   ],
   serviceArea: {
     type: String
+  },
+   collectionDate: {
+    type: String,
+    default: () => dayjs().format('YYYY-MM-DD')
   }
 }, { timestamps: true });
 

@@ -1,5 +1,5 @@
 
-import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService} from "../services/recycling.service.js";
+import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService, routecollectorService, collectRecycleRequest} from "../services/recycling.service.js";
 
 export const createNewRecycle = async (req, res) => {
   try {
@@ -86,12 +86,22 @@ export const rejectRecycleRequest = async (req, res) => {
   }
 };
 
-// export const deleteRecyclingRequest = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     await deleteRecyclingRequest(id);
-//     res.status(200).json({ message: 'Recycling request deleted successfully' });
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// };
+export const routeRecycleRequest = async (req, res) => {
+  const { recycleId, collectorAssayId } = req.body;
+  try{
+   const route = await routecollectorService(recycleId, collectorAssayId);
+    res.status(200).json({ message: "Recycle request en routed", data: route })
+  }catch(error){
+    res. status(400).json({error: error.message})
+  }
+}
+
+export const collectrecycleRquest = async (req, res) => {
+  const {recycleId, collectorAssayId}= req.body;
+  try{
+   const collect = await collectRecycleRequest(recycleId, collectorAssayId)
+   res.status(200).json({mesaage: "Recycle request collected", data: collect})
+  }catch(error){
+  res.status(400).json({error: error.message})
+  }
+}

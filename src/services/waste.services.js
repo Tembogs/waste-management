@@ -5,7 +5,7 @@ import Reward from "../model/rewards.js";
 import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
 
-
+ const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
 export const createWasteRequest = async (wasteData) => {
   const user = await User.findById(wasteData.userId).select("name email phoneNumber gender Reward");
   if (!user) throw new Error("User not found");
@@ -44,7 +44,7 @@ export const createWasteRequest = async (wasteData) => {
   
    
 
-  const normalizedLocation = wasteData.location.address?.trim().toLowerCase();
+  const normalizedLocation = wasteData.location?.trim().toLowerCase();
   const assignedCollector = await CollectorAssay.findOne({
     serviceArea: normalizedLocation
   });
@@ -64,18 +64,18 @@ export const createWasteRequest = async (wasteData) => {
   const wasteRequest = new Waste({
     user: user._id,
     materials: wasteData.materials,
-    location: wasteData.location.address,
-    images: images,
+    location: wasteData.location,
+    images: wasteData.images,
     requestDate: wasteData.requestDate,
     notes: wasteData.notes, 
     status: wasteData.status,
     Reward: reward._id,
-    collector: assignedCollector?._id || null
+    collector:assignedCollector?._id || null
   });
   
   await wasteRequest.save();
 
-  const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+ 
   const materialSummary = wasteData.materials.map((item, i) =>
     `${i + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`
   ).join('<br>');
@@ -278,11 +278,11 @@ export const updatewaste = async (id, updateData) => {
 export const acceptWasteRequestService = async (wasteId, collectorAssayId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
+  let committed = true
   try {
     const waste = await Waste.findById(wasteId).session(session);
     if (!waste) throw new Error("Waste request not found");
-    if (waste.status === "Accepted" || waste.status === "Rejected") {
+    if (waste.status === "Accepted" || waste.status === "Rejected"|| waste.status === "En Route" || waste.status === 'Collected') {
       throw new Error("Waste request has already been processed");
     }
 
@@ -300,33 +300,16 @@ export const acceptWasteRequestService = async (wasteId, collectorAssayId) => {
     // Update assay
     assay.status = "Accepted";
     assay.acceptedRequests += 1;
-
-    waste.materials.forEach(({ wasteType, quantity }) => {
-  
-      const stat = assay.collectionStats.find(s => s.wasteType === wasteType);
-
-      if (stat) {
-        stat.quantityCollected += quantity;
-        stat.updatedAt = new Date();
-      } else {
-        assay.collectionStats.push({
-          wasteType: wasteType,
-          quantityCollected: quantity,
-          updatedAt: new Date()
-        });
-      }
-    });
-
-    assay.totalQuantityCollected += waste.materials.reduce((sum, m) => sum + m.quantity, 0);
     await assay.save({ session });
 
     await session.commitTransaction();
+    committed= true
     session.endSession();
 
     // Compose and send email after transaction
     const subject = "Waste Request Accepted ✅";
     const html = `
-      <h1>Hi ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
       <p>Your waste request has been accepted! A collector is on the way to pick up your materials.</p>
       <p>Thank you for contributing to a cleaner environment! 🌍♻️</p>
       <p>If you have any questions, feel free to reply to this email 📩.</p>
@@ -335,7 +318,9 @@ export const acceptWasteRequestService = async (wasteId, collectorAssayId) => {
 
     return waste;
   } catch (error) {
-    await session.abortTransaction();
+    if(!committed){
+      await session.abortTransaction()
+    }
     session.endSession();
     console.error("Error accepting waste request:", error.message);
     throw new Error("Failed to accept waste request. Please try again.");
@@ -346,11 +331,13 @@ export const acceptWasteRequestService = async (wasteId, collectorAssayId) => {
 export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejectionReason = "") => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let committed = false
 
   try {
     const waste = await Waste.findById(wasteId).session(session);
     if (!waste) throw new Error("Waste request not found");
-    if (waste.status === "Accepted" || waste.status === "Rejected") {
+
+    if (["Collected", "Rejected", "Accepted", "En Route"].includes(waste.status)) {
       throw new Error("Waste request has already been processed");
     }
     if (!rejectionReason || rejectionReason.trim() === "") {
@@ -374,15 +361,16 @@ export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejec
     // Update assay
     assay.status = "Rejected";
     assay.rejectedRequests += 1;
-    await assay.save({ session });
+    await assay.save({session});
 
     await session.commitTransaction();
+    committed= true
     session.endSession();
 
     // Compose and send email after transaction
     const subject = "Waste Request Rejected ❌";
     const html = `
-      <h1>Hi ${user.gender === "Male" ? "Mr" : user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${user.name},</h1>
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
       <p>We're sorry to inform you that your recent waste request has been rejected.</p>
       <p><strong>Reason:</strong> ${rejectionReason}</p>
       <p>You can review your request and submit a new one if needed.</p>
@@ -392,7 +380,9 @@ export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejec
 
     return waste;
   } catch (error) {
-    await session.abortTransaction();
+    if(!committed){
+      await session.abortTransaction()
+    }
     session.endSession();
     console.error("Error rejecting waste request:", error.message);
     throw new Error("Failed to reject waste request. Please try again.");
@@ -417,8 +407,136 @@ export const getCollectorStat = async (collectorAssayId) => {
   };
 };
 
+export const routecollectorService = async (wasteId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+   let committed = false;
 
+  try{
+     const waste = await Waste.findById(wasteId).session(session)
+     if(!waste) throw new Error ("Waste Not Found")
+       if (!["Accepted"].includes(waste.status)) {
+      throw new Error("Waste hasn't been accepted");
+    }
 
+    if (["Collected", "Rejected", "En Route"].includes(waste.status)) {
+      throw new Error("Waste request has already been processed");
+    }
+    
 
+     const user = await User.findById(waste.user).select("name email gender").session(session);
+     if(!user) throw new Error("User not found");
 
+     const assay = await CollectorAssay.findById(collectorAssayId).session(session);
+     if(!assay) throw new Error("Collector not found");
+
+     waste.status ="En Route"
+     waste.collector = collectorAssayId
+     await waste.save({session});
+
+     assay.status = "En Route"
+    await assay.save({ session });
+
+    await session.commitTransaction();
+    committed = true;
+    session.endSession();
+   
+    const subject = "Waste Request En Route 🚚";
+    const html = `
+      <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+      <p>Good news! Your waste request is currently en route and will be handled shortly.</p>
+      <p><strong>Status:</strong> ${waste.status}</p>
+      <p>Please ensure the waste is accessible for collection at the specified location.</p>
+      <p>Thank you for your commitment to a cleaner and healthier environment 🌍.</p>
+    `;
+    await sendEmail(user.email, subject, html);
+
+    return waste;
+
+  
+  }catch(error){
+    if (!committed) {
+      await session.abortTransaction();
+    }
+    session.endSession();
+    console.error("Error en routing waste request:", error.message);
+    throw new Error("Failed to route waste request. Please try again.");
+  }
+}
+
+export const collectWasteRequest = async (wasteId, collectorAssayId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+    let committed = false;
+  try{
+    const waste = await Waste.findById(wasteId).session(session);
+    if(!waste) throw new Error("Waste not found");
+      if (["Accepted"].includes(waste.status)) {
+      throw new Error("Waste hasn't been en route");
+    }
+
+    if (["Collected", "Rejected"].includes(waste.status)) {
+      throw new Error("Waste request has already been processed");
+    }
+
+    
+    const user = await User.findById(waste.user).select("name email gender").session(session)
+    if(!user) throw new Error("User not found")
+
+    const assay = await CollectorAssay.findById(collectorAssayId).session(session)
+    if(!assay) throw new Error("Collector not found")
+
+    waste.status ="Collected"
+    waste.collector = collectorAssayId
+    await waste.save({session})
+
+    assay.status = "Collected"
+
+    waste.materials.forEach(({ wasteType, quantity }) => {
+  
+      const stat = assay.collectionStats.find(s => s.wasteType === wasteType);
+
+      if (stat && waste.status === "Collected") {
+        stat.quantityCollected += quantity;
+        stat.updatedAt = new Date();
+      } else {
+        assay.collectionStats.push({
+          wasteType: wasteType,
+          quantityCollected: quantity,
+          updatedAt: new Date()
+        });
+      }
+    });
+   assay.totalQuantityCollected += waste.materials.reduce((sum, m) => sum + m.quantity, 0);
+   await assay.save({session})
+
+  await session.commitTransaction();
+  committed = true;
+  session.endSession();
+
+  const subject = "Waste Request Collected ✅";
+  const html = `
+    <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
+    <p>We're pleased to inform you that your waste request has been successfully collected.</p>
+    <p><strong>Status:</strong> ${waste.status}</p>
+    <p><strong>Collection Time:</strong> ${new Date(assay.collectionDate).toLocaleString()}</p>
+    <p><strong>Location:</strong> ${assay.serviceArea}</p>
+    <p>We appreciate your commitment to a cleaner and healthier environment 🌍.</p>
+    <p>If you have a moment, we'd love to hear your feedback to help us improve our service.</p>
+    <p>You can submit a new request anytime through your dashboard.</p>
+  `;
+  await sendEmail(user.email, subject, html);
+
+  return waste;
+
+  }catch(error){
+     if (!committed) {
+      await session.abortTransaction();
+    }
+
+    session.endSession();
+    console.error("Error collecting waste request:", error.message);
+    throw new Error("Failed to collect waste request. Please try again.")
+  }
+}
   
