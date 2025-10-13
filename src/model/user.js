@@ -29,10 +29,10 @@ const userSchema = new Schema({
       type:String,
       required: true
     },
-  // profilePicture: {
-  //     type: String,
-  //     default: 'https://yourdomain.com/default-profile.png'
-  //   },
+  profilePicture: {
+      type: String,
+      default: 'https://yourdomain.com/default-profile.png'
+    },
     gender:{
       type: String,
       enum: ["Male", "Female", "Other"],

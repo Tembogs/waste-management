@@ -6,6 +6,7 @@ import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
 
  const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
+ 
 export const createWasteRequest = async (wasteData) => {
   const user = await User.findById(wasteData.userId).select("name email phoneNumber gender Reward");
   if (!user) throw new Error("User not found");
@@ -538,5 +539,11 @@ export const collectWasteRequest = async (wasteId, collectorAssayId) => {
     console.error("Error collecting waste request:", error.message);
     throw new Error("Failed to collect waste request. Please try again.")
   }
+}
+
+
+export const deleteAllUser = async () =>{
+  const user = await Waste.deleteMany()
+  return user
 }
   

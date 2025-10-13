@@ -1,5 +1,10 @@
 import User from "../model/user.js";
 import jwt from "jsonwebtoken";
+import multer from 'multer';
+
+const storage = multer.memoryStorage(); // Store file in memory
+export const upload = multer({ storage });
+ 
 
 export const protect = async (req, res, next) => {
     let token;
@@ -58,3 +63,5 @@ export const isBoth = (req, res, next) => {
       return res.status(403).json({ message: "Access denied" });
     }
   };
+
+  
