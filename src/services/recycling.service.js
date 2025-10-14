@@ -23,12 +23,12 @@ export const createRecycleRequest = async (recycleData) => {
       Glass: 2,
       Metal: 4,
       Organic: 2,
-      'E-waste': 5
+      "E-waste": 5
     };
      const calculatePoints = (materials) => {
       let totalPoints = 0;
       materials.forEach(item => {
-        const basePoints = materialPoints[item.wasteType] || 0;
+        const basePoints = materialPoints[item.recycleType] || 0;
         const itemPoints = basePoints * item.quantity;
         const bonusMultiplier = item.quantity > 50 ? 1.1 : 1;
         totalPoints += itemPoints * bonusMultiplier;
@@ -46,6 +46,7 @@ export const createRecycleRequest = async (recycleData) => {
     });
     
     await reward.save();
+     console.log(recycleType)
 
      const normalizedLocation = recycleData.location?.trim().toLowerCase();
       const assignedCollector = await CollectorAssay.findOne({
@@ -69,11 +70,11 @@ export const createRecycleRequest = async (recycleData) => {
       Reward:reward._id,
       collector: assignedCollector?._id || null
     });
-
+    
     await recycleRequest.save();
       const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
     const materialSummary = recycleData.materials.map((item, index) => {
-      return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
+      return `${index + 1}. ${item.quantity} ${item.unit} of ${item.recycleType}`;
     }).join('<br>');
 
     // 📧 Email to user
