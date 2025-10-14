@@ -25,6 +25,7 @@ export const createRecycleRequest = async (recycleData) => {
       Organic: 2,
       "E-waste": 5
     };
+    console.log("Incoming materials:", JSON.stringify(recycleData.materials, null, 2));
      const calculatePoints = (materials) => {
       let totalPoints = 0;
       materials.forEach(item => {
@@ -46,7 +47,7 @@ export const createRecycleRequest = async (recycleData) => {
     });
     
     await reward.save();
-     console.log(recycleType)
+    
 
      const normalizedLocation = recycleData.location?.trim().toLowerCase();
       const assignedCollector = await CollectorAssay.findOne({
@@ -60,7 +61,6 @@ export const createRecycleRequest = async (recycleData) => {
        const rewardArray = [user.Reward || 0, pointsEarned];
         user.Reward = rewardArray.reduce((total, value) => total + value, 0);
         await user.save();
-
     const recycleRequest = new Recycling({
       user: user._id,
       materials: recycleData.materials,
@@ -70,10 +70,11 @@ export const createRecycleRequest = async (recycleData) => {
       Reward:reward._id,
       collector: assignedCollector?._id || null
     });
-    
+  
     await recycleRequest.save();
       const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
     const materialSummary = recycleData.materials.map((item, index) => {
+      console.log(`Material ${index + 1}:`, item.recycleType);
       return `${index + 1}. ${item.quantity} ${item.unit} of ${item.recycleType}`;
     }).join('<br>');
 

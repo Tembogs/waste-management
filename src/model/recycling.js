@@ -13,7 +13,7 @@ const recyclingSchema = new Schema({
   },
   materials:[
     {
-      recycleType: {
+       recycleType: {
         type: String,
         enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
         default: 'General',
