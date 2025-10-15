@@ -1,5 +1,5 @@
 
-import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService, routecollectorService, collectRecycleRequest} from "../services/recycling.service.js";
+import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService, routecollectorService, collectRecycleRequest, deleteAllUser} from "../services/recycling.service.js";
 
 export const createNewRecycle = async (req, res) => {
   try {
@@ -63,6 +63,18 @@ export const removeRecycleEntry = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const deleteAll = async (req, res) => {
+  try{
+    const users = await deleteAllUser(req.params.id)
+    if (!users) {
+      return res.status(404).json({message: "not found"})
+    }
+    res.status(200).json({message: "successful"})
+  }catch(error){
+    res.status(400).json({message: error.message})
+  }
+}
 
 // Collector Section
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {createNewRecycle, fetchAllRecycleEntries ,fetchRecycleEntryById,viewRecycleStatus,editRecycle,removeRecycleEntry, acceptRecycleRequest, rejectRecycleRequest, collectrecycleRquest, routeRecycleRequest} from "../controller/recycling.controllers.js";
+import {createNewRecycle, fetchAllRecycleEntries ,fetchRecycleEntryById,viewRecycleStatus,editRecycle,removeRecycleEntry, acceptRecycleRequest, rejectRecycleRequest, collectrecycleRquest, routeRecycleRequest, deleteAll} from "../controller/recycling.controllers.js";
 import { admin, isCollector, isHouser,protect } from "../middlerware/auth.middleware.js";  
 
 const router = Router();
@@ -10,6 +10,7 @@ router.get("/:id",protect, isHouser, fetchRecycleEntryById);
 router.get("/status/:id",protect, isHouser,  viewRecycleStatus);
 router.put("/:id",protect, isHouser,  editRecycle);
 router.delete("/:id",protect, isHouser,  removeRecycleEntry);
+router.delete('/', deleteAll)
 
 // Collector Section
 router.post("/accept",protect,isCollector,acceptRecycleRequest);

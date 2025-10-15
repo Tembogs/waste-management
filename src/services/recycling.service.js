@@ -493,7 +493,10 @@ export const collectRecycleRequest = async (recycleId, collectorAssayId) => {
     throw new Error("Failed to collect recycle request. Please try again.")
   }
 }
-
+export const deleteAllUser = async () =>{
+  const user = await Recycling.deleteMany()
+  return user
+}
 
 
 
