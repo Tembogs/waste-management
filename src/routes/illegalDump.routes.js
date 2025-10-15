@@ -9,7 +9,7 @@ import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middl
 const router = Router();
 
 router.post("/",protect, isHouser, reportNewILLegalDump);
-router.get("/", protect, admin, fetchAllIllegalEntries);
+router.get("/", protect, fetchAllIllegalEntries);
 router.get("/:id",protect, isHouser,  fetchAllIllegalEntryById);
 router.get("/status/:id", protect, viewIllegalStatus);
 router.put("/:id",protect, isHouser,  editIllegalEntryById);

@@ -5,7 +5,7 @@ import { admin, isCollector, isHouser,protect } from "../middlerware/auth.middle
 const router = Router();
 
 router.post("/",protect, isHouser, createNewRecycle);
-router.get("/",protect, admin, fetchAllRecycleEntries);
+router.get("/",protect, fetchAllRecycleEntries);
 router.get("/:id",protect, isHouser, fetchRecycleEntryById);
 router.get("/status/:id",protect, isHouser,  viewRecycleStatus);
 router.put("/:id",protect, isHouser,  editRecycle);

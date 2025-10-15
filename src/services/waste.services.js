@@ -75,6 +75,13 @@ export const createWasteRequest = async (wasteData) => {
   });
   
   await wasteRequest.save();
+  const responsePayload = {
+  ...wasteRequest.toObject(), // converts Mongoose doc to plain object
+  collector: collectorUser || null, // replaces the ID with full user info
+};
+
+res.status(201).json(responsePayload);
+
 
  
   const materialSummary = wasteData.materials.map((item, i) =>
