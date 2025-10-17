@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 
 const illegalDumpSchema = new Schema({
-  reporter: {
+ reporter: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true
