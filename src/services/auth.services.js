@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
  const genTitle = (gender) => gender === 'Male' ? "Mr" : gender === "Female" ?"Mrs/Miss" : "Mx"
 
-export const register = async (name, email, password, phoneNumber, role, location, gender) => {
+export const register = async (name, email, password, phoneNumber, role, location, gender, profilePicture) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -26,7 +26,8 @@ export const register = async (name, email, password, phoneNumber, role, locatio
       phoneNumber,
       role,
       location: normalizedLocation,
-      gender
+      gender,
+      profilePicture,
     });
 
     await user.save({ session });

@@ -30,6 +30,7 @@ const recyclingSchema = new Schema({
       }
     }
   ],
+  images: String,
   recyclingDate: { 
      type: String,
     default: () => dayjs().format('DD-MM-YYYY')

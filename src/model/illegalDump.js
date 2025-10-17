@@ -46,7 +46,7 @@ const illegalDumpSchema = new Schema({
       type: Schema.Types.ObjectId, 
       ref: "Reward" 
     },
-  photos: [String],
+  images: String,
   
   reportDate: {
      type: String,
