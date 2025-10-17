@@ -25,18 +25,22 @@ export const fetchAllWasteEntries = async (req, res) => {
   }
 };
 
-export const fetchWasteEntryById = async (req, res) => {
+
+
+export const fetchWasteEntryByIdUserId = async (req, res) => {
   try {
-    const wasteEntry = await getWasteEntryById(req.params.id);
-    if (!wasteEntry) {
-      return res.status(404).json({ message: "Waste entry not found" });
+    const userId = req.params.id; // the user’s ID
+    const wasteEntry = await getWasteEntryById.find(userId);
+
+    if (!wasteEntry.length) {
+      return res.status(404).json({ message: "No waste entries found for this user" });
     }
+
     res.status(200).json(wasteEntry);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
-
 
 export const viewWasteStatus = async (req, res) => {
   try {

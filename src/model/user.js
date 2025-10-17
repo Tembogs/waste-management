@@ -50,7 +50,11 @@ const userSchema = new Schema({
     Reward: {
       type: Number,
       default: 0
-    }
+    },
+    createdAt:{
+        type: Date,
+        default: Date.now
+      }
 
 }, {timestamps: true})
 const User = model("User", userSchema)

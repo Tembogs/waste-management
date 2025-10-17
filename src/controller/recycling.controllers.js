@@ -19,15 +19,20 @@ export const fetchAllRecycleEntries = async (req, res) => {
   }
 };
 
-export const fetchRecycleEntryById = async (req, res) => {
+
+
+export const fetchRecycleEntryByUserId = async (req, res) => {
   try {
-    const Recyclentry = await getRecycleEntryById(req.params.id);
-    if (!Recyclentry) {
-      return res.status(404).json({ message: "Waste entry not found" });
+    const userId = req.params.id; // the user’s ID
+    const Recyclentry = await getRecycleEntryById.find(userId);
+
+    if (!Recyclentry.length) {
+      return res.status(404).json({ message: "No recycle entries found for this user" });
     }
+
     res.status(200).json(Recyclentry);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 

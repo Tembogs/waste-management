@@ -66,12 +66,13 @@ export const createWasteRequest = async (wasteData) => {
     user: user._id,
     materials: wasteData.materials,
     location: wasteData.location,
-    images: wasteData.images,
+    // images: wasteData.images,
     requestDate: wasteData.requestDate,
     notes: wasteData.notes, 
     status: wasteData.status,
     Reward: reward._id,
-    collector:assignedCollector?._id || null
+    collector:assignedCollector?._id || null,
+    createdAt:wasteData.createdAt
   });
   
   await wasteRequest.save();
@@ -123,8 +124,8 @@ export const getAllWasteEntries = async () => {
   return wasteEntries;
 }
 
-export const getWasteEntryById = async (id) => {
-  const wasteEntry = await Waste.findById(id).populate('user', 'name email phoneNumber');
+export const getWasteEntryById = async (userId) => {
+  const wasteEntry = await Waste.findById({userId}).populate('user', 'name email phoneNumber');
 
   if (!wasteEntry || !wasteEntry.materials) {
     throw new Error("Waste entry or materials not found.");

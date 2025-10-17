@@ -1,13 +1,13 @@
 
 import { Router } from "express";
-import {createNewWaste,fetchAllWasteEntries,fetchWasteEntryById,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest, deleteAll} from "../controller/waste.controllers.js";
+import {createNewWaste,fetchAllWasteEntries,viewWasteStatus,editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest, deleteAll, fetchWasteEntryByIdUserId} from "../controller/waste.controllers.js";
 import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 const router = Router();
 
 router.post("/",protect, isHouser, createNewWaste);
 router.get("/",protect, fetchAllWasteEntries);
-router.get("/:id",protect, isHouser, fetchWasteEntryById);
+router.get("/:id",protect, isHouser, fetchWasteEntryByIdUserId);
 router.get("/status/:id", protect,isHouser, viewWasteStatus);
 router.put("/:id",protect, isHouser, editWaste);
 router.delete("/:id",protect, isHouser, removeWasteEntry);

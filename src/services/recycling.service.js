@@ -122,8 +122,8 @@ export const getAllRecycleEntries = async () => {
   return recycleEntries;
 }
 
-export const getRecycleEntryById = async (id) => {
-  const recycleEntry = await Recycling.findById(id).populate('user', 'name email phoneNumber');
+export const getRecycleEntryById = async (userId) => {
+  const recycleEntry = await Recycling.findById({ userId }).populate('user', 'name email phoneNumber');
   return recycleEntry;
 }
 

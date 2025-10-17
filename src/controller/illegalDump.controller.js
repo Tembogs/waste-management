@@ -21,18 +21,21 @@ export const fetchAllIllegalEntries =async (req,res) =>{
   }
 }
 
-export const fetchAllIllegalEntryById = async (req,res) => {
-  try{
-    const illegalEntry = await getIllegalEntryById(req.params.id);
-    if(!illegalEntry){
-      return res.status(404).json({message:"Illegal entry not found"})
-    }
-    res.status(200).json(illegalEntry);
+export const fetchIllegalEntriesByUserId = async (req, res) => {
+  try {
+    const userId = req.params.id; // the user’s ID
+    const illegalEntries = await getIllegalEntryById.find(userId);
 
-  } catch(error){
-    res.status(400).json({message:error.message})
+    if (!illegalEntries.length) {
+      return res.status(404).json({ message: "No illegal entries found for this user" });
+    }
+
+    res.status(200).json(illegalEntries);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-}
+};
+
 
 export const editIllegalEntryById = async (req,res) => {
   try{
