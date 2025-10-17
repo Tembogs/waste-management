@@ -122,7 +122,7 @@ export const getAllIllegalEntries = async () => {
   return IllegalEntries;
 }
 
-export const getIllegalEntriesByUserId = async (userId) => {
+export const getIllegalEntryById = async (userId) => {
   const entries = await IllegalDump.find({ userId })
     .populate('reporter', 'name email phoneNumber');
   return entries;
