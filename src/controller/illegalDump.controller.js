@@ -24,7 +24,7 @@ export const fetchAllIllegalEntries =async (req,res) =>{
 export const fetchIllegalEntriesByUserId = async (req, res) => {
   try {
     const userId = req.params.id; // the user’s ID
-    const illegalEntries = await getIllegalEntryById.find(userId);
+    const illegalEntries = await getIllegalEntryById(userId);
 
     if (!illegalEntries.length) {
       return res.status(404).json({ message: "No illegal entries found for this user" });

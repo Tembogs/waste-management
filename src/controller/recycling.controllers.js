@@ -24,7 +24,7 @@ export const fetchAllRecycleEntries = async (req, res) => {
 export const fetchRecycleEntryByUserId = async (req, res) => {
   try {
     const userId = req.params.id; // the user’s ID
-    const Recyclentry = await getRecycleEntryById.find(userId);
+    const Recyclentry = await getRecycleEntryById(userId);
 
     if (!Recyclentry.length) {
       return res.status(404).json({ message: "No recycle entries found for this user" });

@@ -30,7 +30,7 @@ export const fetchAllWasteEntries = async (req, res) => {
 export const fetchWasteEntryByIdUserId = async (req, res) => {
   try {
     const userId = req.params.id; // the user’s ID
-    const wasteEntry = await getWasteEntryById.find(userId);
+    const wasteEntry = await getWasteEntryById(userId);
 
     if (!wasteEntry.length) {
       return res.status(404).json({ message: "No waste entries found for this user" });
