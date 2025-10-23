@@ -19,6 +19,7 @@ const userSchema = new Schema({
       required:true,
       unique: true
     },
+    bio:String,
   role:{
       type:String,
       enum:["Houser", "Collector", "Community_admin"],

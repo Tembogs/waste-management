@@ -1,7 +1,7 @@
 import User from "../model/user.js";
 
 
-export const createUser = async (name, email, password,phoneNumber, role, location,gender, profilePicture) => {
+export const createUser = async (name, email, password,phoneNumber, role, location,gender, profilePicture,bio) => {
   const user = new User({
     name,
     email,
@@ -10,7 +10,8 @@ export const createUser = async (name, email, password,phoneNumber, role, locati
     role,
     location,
     gender,
-    profilePicture
+    profilePicture,
+    bio
   })
   await user.save();
   return user;
