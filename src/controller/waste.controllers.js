@@ -44,6 +44,10 @@ export const fetchWasteEntryByIdUserId = async (req, res) => {
 
 export const viewWasteStatus = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: Missing user ID" });
+    }
+
     const userId = req.user.id;
 
     console.log(userId)
