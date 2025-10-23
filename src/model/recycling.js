@@ -31,10 +31,10 @@ const recyclingSchema = new Schema({
     }
   ],
   images: String,
-  recyclingDate: { 
-     type: String,
-    default: () => dayjs().format('DD-MM-YYYY')
-  },
+  recyclingDate: {
+      type: Date,
+      default: () => dayjs().format('YYYY-MM-DD')
+    },
   status:{
     type: String,
     enum: ['Pending', 'Accepted', 'Rejected', 'En Route', 'Collected'],

@@ -1,16 +1,16 @@
 import CollectorAssay from "../model/collectorAssay.js";
-import {createWasteRequest, getAllWasteEntries, getWasteEntryById, getWasteStatus, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat, collectWasteRequest, routecollectorService, deleteAllUser} from "../services/waste.services.js";
+import {createWasteRequest, getAllWasteEntries, getWasteStatusV2, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat, collectWasteRequest, routecollectorService, deleteAllUser, getWasteRequestToCollector} from "../services/waste.services.js";
 
 
 export const createNewWaste = async (req, res) => {
   try {
     const userId = req.user._id; // securely extracted from auth middleware
     const wasteData = { ...req.body, userId }; // inject userId into the payload
-
+    
     const wasteRequest = await createWasteRequest(wasteData);
-    res.status(201).json({success: true, message: "request successfully created", data: wasteRequest
-
-    });
+    res.status(201).json({ success: true, message: "request successfully created", data: wasteRequest });
+    
+    
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -27,37 +27,28 @@ export const fetchAllWasteEntries = async (req, res) => {
 
 
 
-export const fetchWasteEntryByIdUserId = async (req, res) => {
-  try {
-    const userId = req.params.id; // the user’s ID
-    const wasteEntry = await getWasteEntryById(userId);
-
-    if (!wasteEntry.length) {
-      return res.status(404).json({ message: "No waste entries found for this user" });
-    }
-
-    res.status(200).json(wasteEntry);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const viewWasteStatus = async (req, res) => {
+export const viewWasteStatusV2 = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized: Missing user ID" });
     }
 
     const userId = req.user.id;
-
-    console.log(userId)
-
-    const statusInfo = await getWasteStatus(userId);
+    const statusInfo = await getWasteStatusV2(userId);
     res.status(200).json(statusInfo);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    console.error("--- UNHANDLED ERROR IN viewWasteStatusV2 ---");
+    console.error("Error Name:", error.name);
+    console.error("Error Message:", error.message);
+    console.error("Error Stack:", error.stack);
+    console.error("Full Error Object:", error);
+    console.error("--- END OF ERROR ---");
+    res.status(400).json({ 
+        errorMessage: error.message 
+    });
   }
 };
+
 
 export const editWaste = async (req, res) => {
   try {
@@ -150,3 +141,36 @@ export const collectWasteRquest = async (req, res) => {
   res.status(400).json({error: error.message})
   }
 }
+
+
+
+
+export const getWasteRequestToCollectorController = async (req, res) => {
+  try {
+    const { collectorAssayId } = req.params;
+
+    if (!collectorAssayId) {
+      return res.status(400).json({ error: 'Missing required parameters: collectorAssayId' });
+    }
+
+    const loggedInUser = req.user; // Comes from middleware
+
+    const wasteRequests = await getWasteRequestToCollector(collectorAssayId);
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: loggedInUser._id,
+        name: loggedInUser.name,
+        email: loggedInUser.email
+      },
+      data: wasteRequests
+    });
+  } catch (error) {
+    console.error('Error fetching waste requests:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal Server Error'
+    });
+  }
+};

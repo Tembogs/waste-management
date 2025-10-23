@@ -122,37 +122,57 @@ export const getAllRecycleEntries = async () => {
   return recycleEntries;
 }
 
-export const getRecycleEntryById = async (userId) => {
-  const recycleEntry = await Recycling.findById({ userId }).populate('user', 'name email phoneNumber');
-  return recycleEntry;
-}
+export const getRecycleStatusV2 = async (userId) => {
+  const recycleEntries = await Recycling.find({ user: userId })
+  .populate('user', 'name email phoneNumber')
+  .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' 
+      }
+    });
 
-export const getRecycleStatus = async (userId) => {
-  const requestEntry = await Recycling.find({ user: userId }).populate('user', 'name email phoneNumber');
-
-  if (!requestEntry || requestEntry.length === 0) {
-    throw new Error('Recycle request not found or access denied.');
+  if (!recycleEntries || recycleEntries.length === 0) {
+      return []; 
   }
-  return  requestEntry.map(entry => ({
-    name: entry.user.name,
-    email: entry.user.email,
-    phoneNumber: entry.user.phoneNumber,
-    materials: entry.materials,
-    status: entry.status,
-    requestDate: entry.requestDate,
-  }))
+
+  return recycleEntries.map(entry => {
+    if (!entry.user) {
+      return {
+         id: entry._id, 
+        name: 'Unknown User',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        recyclingDate: entry.recyclingDate,
+        error: 'Associated user not found'
+      };
+    }
+    const collectorUser = entry.collector ? entry.collector.user : null;
+    return {
+      id: entry._id, 
+      name: entry.user.name,
+      email: entry.user.email,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      phoneNumber: entry.user.phoneNumber,
+      materials: entry.materials,
+      status: entry.status,
+      recyclingDate: entry.recyclingDate,
+    };
+  });
 };
 
-export const deleteReycleEntry = async (id) => {
-  const recycleEntry = await Recycling.findByIdAndDelete(id);
-    if (!recycleEntry) return null;
-  
+export const deleteRecycleEntry = async (id) => {
+    const recycleEntry = await Recycling.findByIdAndDelete(id); // Corrected typo
+    if (!recycleEntry) return null; // Corrected typo
     if (recycleEntry.Reward) {
       await Reward.findByIdAndDelete(recycleEntry.Reward);
     }
-    await Recycling.findByIdAndDelete(id);
-  return recycleEntry;
-}
+    return recycleEntry; // Corrected missing semicolon
+  };
 
 export const updateRecycle = async (id, updateData) => { 
   const allowedUpdates = ['materials', 'collectionDate', 'notes', 'images', "location"];
@@ -329,7 +349,7 @@ export const rejectRecycleRequestService = async (recycleId, collectorAssayId, r
 
     // Update recycle
     recycle.status = "Rejected";
-    recycle.collector = null;
+    recycle.collector = collectorAssayId;
     recycle.rejectionReason = rejectionReason;
     await recycle.save({ session });
 
@@ -497,6 +517,59 @@ export const deleteAllUser = async () =>{
   const user = await Recycling.deleteMany()
   return user
 }
+
+
+export const getRecycleRequestToCollector = async (collectorAssayId) => {
+  const recycleRequests = await Recycling.find({ collector: collectorAssayId })
+    .populate('user', 'name email phoneNumber') // Populate the user who made the request
+    .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' // Populate the collector's user details
+      }
+    });
+
+  if (!recycleRequests || recycleRequests.length === 0) {
+    return [];
+  }
+
+  return recycleRequests.map(entry => {
+    if (!entry.user) {
+      return {
+        id: entry._id,
+        name: 'Unknown User',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        recyclingDate: entry.recyclingDate,
+        error: 'Associated user not found'
+      };
+    }
+
+    const collectorUser = entry.collector ? entry.collector.user : null;
+
+    return {
+      recycleId: entry._id,
+      userId: entry.user._id,
+      userName: entry.user.name,
+      userEmail: entry.user.email,
+      userPhoneNumber: entry.user.phoneNumber,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      collectorPhoneNumber: collectorUser ? collectorUser.phoneNumber : 'N/A',
+      materials: entry.materials,
+      status: entry.status,
+      recyclingDate: entry.recyclingDate,
+      location: entry.location,
+      serviceArea: entry.collector ? entry.collector.serviceArea : 'N/A',
+      collectionDate: entry.collector ? entry.collector.collectionDate : null,
+      totalQuantityCollected:entry.collector.totalQuantityCollected,
+      notes: entry.notes
+    };
+  });
+};
 
 
 

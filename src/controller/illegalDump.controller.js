@@ -1,9 +1,11 @@
-import{reportIllegalDump,getAllIllegalEntries,getIllegalEntryById,updateIllegalEntryById, getillegalStatus, deleteIllegalEntry, acceptDumpRequestService, rejectDumpRequestService, resolveDumpRequestService} from "../services/illegalDumping.services.js";
+import{reportIllegalDump,getAllIllegalEntries,updateIllegalEntryById,deleteIllegalEntry, acceptDumpRequestService, rejectDumpRequestService, resolveDumpRequestService, getIllegalStatusV2, deleteAllDump, getDumpRequestToCollector} from "../services/illegalDumping.services.js";
 
 export const reportNewILLegalDump = async(req,res) => {
   try{
-    const illegalDump = await reportIllegalDump(req.body);
-    res.status(201).json(illegalDump)
+    const userId = req.user._id; // Get user ID from auth middleware
+    const illegalData = { ...req.body, userId }; // Add userId to the data
+    const illegalrequest = await reportIllegalDump(illegalData);
+    res.status(201).json(illegalrequest)
   
   }catch(error){
     res.status(400).json({message:error.message})
@@ -21,21 +23,27 @@ export const fetchAllIllegalEntries =async (req,res) =>{
   }
 }
 
-export const fetchIllegalEntriesByUserId = async (req, res) => {
+export const viewIllegalStatusV2 = async (req, res) => {
   try {
-    const userId = req.params.id; // the user’s ID
-    const illegalEntries = await getIllegalEntryById(userId);
-
-    if (!illegalEntries.length) {
-      return res.status(404).json({ message: "No illegal entries found for this user" });
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: Missing user ID" });
     }
 
-    res.status(200).json(illegalEntries);
+    const userId = req.user.id;
+    const statusInfo = await getIllegalStatusV2(userId);
+    res.status(200).json(statusInfo);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("--- UNHANDLED ERROR IN viewIllegalStatusV2 ---");
+    console.error("Error Name:", error.name);
+    console.error("Error Message:", error.message);
+    console.error("Error Stack:", error.stack);
+    console.error("Full Error Object:", error);
+    console.error("--- END OF ERROR ---");
+    res.status(400).json({ 
+        errorMessage: error.message 
+    });
   }
 };
-
 
 export const editIllegalEntryById = async (req,res) => {
   try{
@@ -46,15 +54,6 @@ export const editIllegalEntryById = async (req,res) => {
   } 
 }
 
-export const viewIllegalStatus = async (req,res) => {
-  try{
-    const userId = req.user.id;  
-    const statusInfo = await getillegalStatus(userId);
-    res.status(200).json(statusInfo)
-  }catch(error){
-    res.status(404).json({message:error.message})
-  }
-}
 
 export const removeIllegalEntry = async (req,res) => {
   try{
@@ -68,17 +67,32 @@ export const removeIllegalEntry = async (req,res) => {
   }  
 }
 
+export const deleteAll = async (req, res) => {
+  try{
+    const dumps = await deleteAllDump(req.params.id)
+    if (!dumps) {
+      return res.status(404).json({message: "not found"})
+    }
+    res.status(200).json({message: "successful"})
+  }catch(error){
+    res.status(400).json({message: error.message})
+  }
+}
+
 // cOllector Section
 
+// controllers/dumpController.j
+
 export const acceptIllegalDumpRequest = async (req, res) => {
-  const { dumpId, collectorAssayId } = req.body;
-  try {
+  const {dumpId, collectorAssayId}= req.body
+  try{
     const acceptedDump = await acceptDumpRequestService(dumpId, collectorAssayId);
     res.status(200).json(acceptedDump);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
+  }catch(error){
+    res.status(400).json({message:error.message})
   }
-};
+}
+
 
 export const rejectIllegalDumpRequest = async (req, res) => {
   const { dumpId, collectorAssayId, rejectionReason } = req.body;
@@ -91,11 +105,41 @@ export const rejectIllegalDumpRequest = async (req, res) => {
 }
 
 export const resolveDumpingRequest = async (req, res) => {
-  const {dumbId, collectorAssayId} = req.body
+  const {dumpId, collectorAssayId} = req.body
   try{
-     const resolveDump = await resolveDumpRequestService(dumbId, collectorAssayId)
+     const resolveDump = await resolveDumpRequestService(dumpId, collectorAssayId)
      res.status(200).json(resolveDump)
   }catch(error){
    res.status(400).json({message:error.message})
   }
 }
+
+export const getDumpRequestToCollectorController = async (req, res) => {
+  try {
+    const { collectorAssayId } = req.params;
+
+    if (!collectorAssayId) {
+      return res.status(400).json({ error: 'Missing required parameters: collectorAssayId' });
+    }
+
+    const loggedInUser = req.user;
+
+    const dumpRequests = await getDumpRequestToCollector(collectorAssayId);
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: loggedInUser._id,
+        name: loggedInUser.name,
+        email: loggedInUser.email
+      },
+      data: dumpRequests
+    });
+  } catch (error) {
+    console.error('Error fetching dump requests:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal Server Error'
+    });
+  }
+};

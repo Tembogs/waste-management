@@ -1,9 +1,11 @@
 
-import {createRecycleRequest, getAllRecycleEntries, getRecycleEntryById, getRecycleStatus, updateRecycle, deleteReycleEntry, acceptRecycleRequestService, rejectRecycleRequestService, routecollectorService, collectRecycleRequest, deleteAllUser} from "../services/recycling.service.js";
+import {createRecycleRequest, getAllRecycleEntries,  updateRecycle, deleteRecycleEntry, acceptRecycleRequestService, rejectRecycleRequestService, routecollectorService, collectRecycleRequest, deleteAllUser, getRecycleStatusV2, getRecycleRequestToCollector} from "../services/recycling.service.js";
 
 export const createNewRecycle = async (req, res) => {
   try {
-    const recycleRequest = await createRecycleRequest(req.body);
+    const userId = req.user._id; // Get user ID from auth middleware
+    const recycleData = { ...req.body, userId }; // Add userId to the data
+    const recycleRequest = await createRecycleRequest(recycleData);
     res.status(201).json(recycleRequest);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -21,30 +23,25 @@ export const fetchAllRecycleEntries = async (req, res) => {
 
 
 
-export const fetchRecycleEntryByUserId = async (req, res) => {
+export const viewRecycleStatusV2 = async (req,res) => {
   try {
-    const userId = req.params.id; // the user’s ID
-    const Recyclentry = await getRecycleEntryById(userId);
-
-    if (!Recyclentry.length) {
-      return res.status(404).json({ message: "No recycle entries found for this user" });
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: Missing user ID" });
     }
 
-    res.status(200).json(Recyclentry);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-export const viewRecycleStatus = async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    const statusInfo = await getRecycleStatus(userId);
+    const userId = req.user.id;
+    const statusInfo = await getRecycleStatusV2(userId);
     res.status(200).json(statusInfo);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    console.error("--- UNHANDLED ERROR IN viewRecycleStatusV2 ---");
+    console.error("Error Name:", error.name);
+    console.error("Error Message:", error.message);
+    console.error("Error Stack:", error.stack);
+    console.error("Full Error Object:", error);
+    console.error("--- END OF ERROR ---");
+    res.status(400).json({ 
+        errorMessage: error.message 
+    });
   }
 };
 
@@ -59,7 +56,7 @@ export const editRecycle= async (req, res) => {
 
 export const removeRecycleEntry = async (req, res) => {
   try {
-    const deletedEntry = await deleteReycleEntry(req.params.id);
+    const deletedEntry = await deleteRecycleEntry(req.params.id);
     if (!deletedEntry) {
       return res.status(404).json({ message: "Recycle entry not found" });
     }
@@ -122,3 +119,34 @@ export const collectrecycleRquest = async (req, res) => {
   res.status(400).json({error: error.message})
   }
 }
+
+export const getRecycleRequestToCollectorController = async (req, res) => {
+  try {
+    const { collectorAssayId } = req.params;
+
+    if (!collectorAssayId) {
+      return res.status(400).json({ error: 'Missing required parameters: collectorAssayId' });
+    }
+
+    const loggedInUser = req.user;
+
+    const recycleRequests = await getRecycleRequestToCollector(collectorAssayId);
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: loggedInUser._id,
+        name: loggedInUser.name,
+        email: loggedInUser.email
+      },
+      data: recycleRequests
+    });
+  } catch (error) {
+    console.error('Error fetching recycle requests:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal Server Error'
+    });
+  }
+};
+

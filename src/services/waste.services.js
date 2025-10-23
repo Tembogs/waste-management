@@ -76,12 +76,13 @@ export const createWasteRequest = async (wasteData) => {
   });
   
   await wasteRequest.save();
-  const responsePayload = {
-  ...wasteRequest.toObject(), // converts Mongoose doc to plain object
-  collector: collectorUser || null, // replaces the ID with full user info
-};
+//   const responsePayload = {
+//   ...wasteRequest.toObject(), // converts Mongoose doc to plain object
+//   collector: collectorUser || null, // replaces the ID with full user info
+// };
 
-res.status(201).json(responsePayload);
+// return responsePayload;
+
 
 
  
@@ -124,85 +125,60 @@ export const getAllWasteEntries = async () => {
   return wasteEntries;
 }
 
-export const getWasteEntryById = async (userId) => {
-  const wasteEntry = await Waste.findById({userId}).populate('user', 'name email phoneNumber');
 
-  if (!wasteEntry || !wasteEntry.materials) {
-    throw new Error("Waste entry or materials not found.");
-  }
-
-  // 🧾 Format material summary
-  const materialSummary = wasteEntry.materials.map((item, index) => {
-    return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
-  }).join('<br>');
-
-  // 📧 Email to user 
-  const subject = "Waste Product Request 🚮🗑️";
-  const html = `
-    <h1>Hi ${wasteEntry.user.gender === "Male" ? "Mr" : wasteEntry.user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${wasteEntry.user.name} 👋</h1>
-    <p>Thanks for submitting another waste request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
-    <p>Here’s a quick summary of your latest request:</p>
-    <p>${materialSummary}</p>
-    <p>Status: <strong>${wasteEntry.status} ⏳</strong></p>
-    <p>🛠 Our team is reviewing your request and will notify you once a collector is assigned.</p>
-    <p>If you have any updates or questions, feel free to reply to this email 📩.</p>
-    <p>You're making a difference—thank you for being part of the solution 💚!</p>
-  `;
-  await sendEmail(wasteEntry.user.email, subject, html);
-
-  return wasteEntry;
-};
-
-export const getWasteStatus = async (userId) => {
-  const wasteEntries = await Waste.find({ user: userId }).populate('user', 'name email phoneNumber gender');
+export const getWasteStatusV2 = async (userId) => {
+  const wasteEntries = await Waste.find({ user: userId })
+  .populate('user', 'name email phoneNumber')
+  .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' 
+      }
+    });
 
   if (!wasteEntries || wasteEntries.length === 0) {
-    throw new Error('No waste requests found for this user.');
+      return []; 
   }
 
-  // 🧾 Format material summary
-   const latestEntry = wasteEntries[0];
-
-  const materialSummary = latestEntry.materials.map((item, index) => {
-    return `${index + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`;
-  }).join('<br>');
-
-  // 📧 Email to user 
-  const subject = "Waste Product Status Request 🚮🗑️";
-  const html = `
-    <h1>Hi ${latestEntry.user.gender === "Male" ? "Mr" : latestEntry.user.gender === "Female" ? "Mrs/Miss" : 'Mx'} ${latestEntry.user.name} 👋</h1>
-    <p>Thanks for submitting another waste request! ♻️ We're thrilled to see your continued commitment to a cleaner environment 🌍.</p>
-    <p>Here’s a quick summary of your latest request:</p>
-    <p>${materialSummary}</p>
-    <p>Status: <strong>${latestEntry.status} ⏳</strong></p>
-    <p>🛠 Our team is reviewing your request and will notify you once a collector is assigned.</p>
-    <p>If you have any updates or questions, feel free to reply to this email 📩.</p>
-    <p>You're making a difference—thank you for being part of the solution 💚!</p>
-  `;
-  await sendEmail(latestEntry.user.email, subject, html);
-
-  return wasteEntries.map(entry => ({
-    name: entry.user.name,
-    email: entry.user.email,
-    phoneNumber: entry.user.phoneNumber,
-    materials: entry.materials,
-    status: entry.status,
-    requestDate: entry.requestDate,
-  }));
+  return wasteEntries.map(entry => {
+    if (!entry.user) {
+      return {
+         id: entry._id, 
+        name: 'Unknown User',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        requestDate: entry.requestDate,
+        error: 'Associated user not found'
+      };
+    }
+    const collectorUser = entry.collector ? entry.collector.user : null;
+    return {
+       id: entry._id, 
+      name: entry.user.name,
+      email: entry.user.email,
+      phoneNumber: entry.user.phoneNumber,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      materials: entry.materials,
+      status: entry.status,
+      requestDate: entry.requestDate,
+    };
+  });
 };
 
 
 export const deleteWasteEntry = async (id) => {
-  const wasteEntry = await Waste.findById(id);
+  const wasteEntry = await Waste.findByIdAndDelete(id);
   if (!wasteEntry) return null;
-
   if (wasteEntry.Reward) {
     await Reward.findByIdAndDelete(wasteEntry.Reward);
   }
-  await Waste.findByIdAndDelete(id);
-
   return wasteEntry;
 };
+
 
 export const updatewaste = async (id, updateData) => {
   const allowedUpdates = ['materials', 'collectionDate', 'notes', 'images', 'location'];
@@ -363,7 +339,7 @@ export const rejectWasteRequestService = async (wasteId, collectorAssayId, rejec
 
     // Update waste
     waste.status = "Rejected";
-    waste.collector = null;
+    waste.collector = collectorAssayId;
     waste.rejectionReason = rejectionReason;
     await waste.save({ session });
 
@@ -554,4 +530,58 @@ export const deleteAllUser = async () =>{
   const user = await Waste.deleteMany()
   return user
 }
-  
+
+
+
+export const getWasteRequestToCollector = async (collectorAssayId) => {
+  const wasteRequests = await Waste.find({ collector: collectorAssayId })
+    .populate('user', 'name email phoneNumber')
+    .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' 
+      }
+    });
+
+  if (!wasteRequests || wasteRequests.length === 0) {
+    return [];
+  }
+
+  return wasteRequests.map(entry => {
+    if (!entry.user) {
+      return {
+        id: entry._id,
+        name: 'Unknown User',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        recyclingDate: entry.recyclingDate,
+        error: 'Associated user not found'
+      };
+    }
+
+    const collectorUser = entry.collector ? entry.collector.user : null;
+
+    return {
+      wasteId: entry._id,
+      userId: entry.user._id,
+      userName: entry.user.name,
+      userEmail: entry.user.email,
+      userPhoneNumber: entry.user.phoneNumber,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      collectorPhoneNumber: collectorUser ? collectorUser.phoneNumber : 'N/A',
+      rejectionReason:entry.collector.rejectionReason,
+      materials: entry.materials,
+      status: entry.status,
+      requestDate: entry.requestDate,
+      location: entry.location,
+      serviceArea: entry.collector ? entry.collector.serviceArea : 'N/A',
+      collectionDate: entry.collector ? entry.collector.collectionDate : null,
+      totalQuantityCollected:entry.collector.totalQuantityCollected,
+      notes: entry.notes
+    };
+  });
+};

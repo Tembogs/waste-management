@@ -74,6 +74,15 @@ export const login = async (email, password) => {
       expiresIn: "1h"
     });
 
+    let collectorAssay = null;
+
+    if (user.role === "Collector") {
+      collectorAssay = await CollectorAssay.findOne({ collector: user._id })
+        .select("_id")
+        .lean();
+    }
+     console.log("CollectorAssay found:", collectorAssay);
+
     const subject = `Welcome back ${genTitle(user.gender)} ${user.name}`;
     const html = `
       <h1>Hi ${user.name},</h1>
@@ -81,7 +90,12 @@ export const login = async (email, password) => {
     `;
     await sendEmail(user.email, subject, html);
 
-    return { user, token };
+    const userData = {
+      ...user.toObject(),
+      collectorAssayId: collectorAssay?._id || null,
+    };
+
+    return { user: userData, token };
   } catch (error) {
     console.error("Login error:", error.message);
     return { error: "Login failed" };

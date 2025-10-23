@@ -122,12 +122,48 @@ export const getAllIllegalEntries = async () => {
   return IllegalEntries;
 }
 
-export const getIllegalEntryById = async (userId) => {
-  const entries = await IllegalDump.find({ userId })
-    .populate('reporter', 'name email phoneNumber');
-  return entries;
-};
+export const getIllegalStatusV2 = async (userId) => {
+  const illegalEntries = await IllegalDump.find({ reporter: userId })
+  .populate('reporter', 'name email phoneNumber')
+  .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' 
+      }
+    });
 
+  if (!illegalEntries || illegalEntries.length === 0) {
+      return []; 
+  }
+
+  return illegalEntries.map(entry => {
+    if (!entry.reporter) {
+      return {
+         id: entry._id, 
+        name: 'Unknown Reporter',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        reportDate: entry.reportDate,
+        error: 'Associated reporter not found'
+      };
+    }
+    const collectorUser = entry.collector ? entry.collector.user : null;
+    return {
+       id: entry._id, 
+      name: entry.reporter.name,
+      email: entry.reporter.email,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      phoneNumber: entry.reporter.phoneNumber,
+      materials: entry.materials,
+      status: entry.status,
+      reportDate: entry.reportDate,
+    };
+  });
+};
 export const updateIllegalEntryById = async (id, status) => {
   const allowedUpdates = ['materials', 'description','photos', "location"];
   const updates = {};
@@ -201,35 +237,24 @@ export const updateIllegalEntryById = async (id, status) => {
       } catch (error) {
         console.error('Email sending failed:', error.message);
       }
-  return illegalEntry;
-}
-
-export const getillegalStatus = async (userId) => {
-  const illegalEntry = await IllegalDump.find({ user: userId }).populate('reporter', 'name email phoneNumber');
-
-  if (!illegalEntry || illegalEntry.length === 0) {
-    throw new Error('illegalDump request not found or access denied.');
-  }
-  return  illegalEntry.map(entry => ({
-    name: entry.user.name,
-    email: entry.user.email,
-    phoneNumber: entry.user.phoneNumber,
-    materials: entry.materials,
-    status: entry.status,
-    requestDate: entry.requestDate,
-  }))
-}
-
+      return illegalEntry;
+    }
+    
+    
 export const deleteIllegalEntry = async (id) => {
   const illegalEntry = await IllegalDump.findByIdAndDelete(id);
       if (!illegalEntry) return null;
-    
       if (illegalEntry.Reward) {
         await Reward.findByIdAndDelete(illegalEntry.Reward);
       }
-      await IllegalDump.findByIdAndDelete(id);
   return illegalEntry;
 } 
+
+
+export const deleteAllDump = async () =>{
+  const dump = await IllegalDump.deleteMany()
+  return dump
+}
 
 
 // Collector- Section
@@ -237,13 +262,14 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   let committed = false;
+  console.log("Service received dumpId:", dumpId, "collectorAssayId:", collectorAssayId);
 
   try {
     const dump = await IllegalDump.findById(dumpId).session(session);
-    if (!dump) throw new Error("IllegalDump report request not found");
+    if (!dump) throw new Error("Illegal dump report request not found");
 
     if (["InReview", "Resolved", "Rejected"].includes(dump.status)) {
-      throw new Error("IllegalDump report request has already been processed");
+      throw new Error("Dump request has already been processed");
     }
 
     const user = await User.findById(dump.reporter)
@@ -272,7 +298,7 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
         assay.collectionStats.push({
           dumpType,
           quantityCollected: quantity,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
       }
     });
@@ -284,35 +310,34 @@ export const acceptDumpRequestService = async (dumpId, collectorAssayId) => {
     committed = true;
     session.endSession();
 
-    // Compose and send email after transaction
-    const subject = "IllegalDump Report Request Under Review 🔍";
+    // Send email notification
+    const genTitle = gender => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : "Mx";
+    const subject = "Illegal Dump Report Under Review 🔍";
     const html = `
       <h1>Hi ${genTitle(user.gender)} ${user.name},</h1>
-      <p>We’ve received your illegal dumping report and it's currently under review by our team.</p>
-      <p>We appreciate your effort in helping maintain a cleaner environment! 🌍♻️</p>
-      <p>If you have any questions or additional details to share, feel free to reply to this email 📩.</p>
+      <p>Your illegal dumping report is now under review by our team.</p>
+      <p>Thank you for helping maintain a cleaner environment! 🌍♻️</p>
     `;
     await sendEmail(user.email, subject, html);
 
     return dump;
   } catch (error) {
-    if (!committed) {
-      await session.abortTransaction();
-    }
+    if (!committed) await session.abortTransaction();
     session.endSession();
-    console.error(`Error accepting dump request ${dumpId} with assay ${collectorAssayId}:`, error.message);
-    throw new Error("Failed to accept dumping report request. Please try again.");
+    console.error(`Error accepting dump request ${dumpId}:`, error.message);
+    throw new Error("Failed to accept dump request. Please try again.");
   }
 };
 
 
-export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejectionReason = "") => {
+
+export const rejectDumpRequestService = async (dumpId, collectorAssayId, rejectionReason = "") => {
   const session = await mongoose.startSession();
   session.startTransaction();
   let committed = false
 
   try {
-    const dumb = await IllegalDump.findById(dumbId).session(session);
+    const dumb = await IllegalDump.findById(dumpId).session(session);
     if (!dumb) throw new Error("illegal dumbing report request not found");
     if (dumb.status === "In Review" || dumb.status === "Resolved") {
       throw new Error("illegal dumbing report request has already been processed");
@@ -329,7 +354,7 @@ export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejecti
 
     // Update dumb
     dumb.status = "Rejected";
-    dumb.collector = null;
+    dumb.collector = collectorAssayId;
     dumb.rejectionReason = rejectionReason;
     await dumb.save({ session });
 
@@ -354,7 +379,7 @@ export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejecti
     `;
     await sendEmail(user.email, subject, html);
 
-    return dump;
+    return dumb;
   } catch (error) {
    if (!committed)  {
       await session.abortTransaction()
@@ -365,17 +390,17 @@ export const rejectDumpRequestService = async (dumbId, collectorAssayId, rejecti
   }
 };
 
-export const resolveDumpRequestService = async (dumbId, collectorAssayId) => {
+export const resolveDumpRequestService = async (dumpId, collectorAssayId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   let committed = false
 
   try {
-     const dump = IllegalDump.findById(dumbId).session(session)
+     const dump = await IllegalDump.findById(dumpId).session(session)
      if(!dump) throw new Error ("dump request not found ")
-    if(!dump) throw new Error ("Recycle Not Found")
-    if (!["InReview"].includes(dump.status)) 
+
+    if (dump.status !== "InReview") 
       {
         throw new Error("Dump hasn't been review");
       }
@@ -384,10 +409,10 @@ export const resolveDumpRequestService = async (dumbId, collectorAssayId) => {
       throw new Error("Dump request has already been processed");
     }
     
-    const user = User.findById(dump.reporter).select("name email gender").session(session)
+    const user = await User.findById(dump.reporter).select("name email gender").session(session)
     if(!user) throw new Error('User not found')
 
-    const assay = CollectorAssay.findById(collectorAssayId).session(session)
+    const assay = await CollectorAssay.findById(collectorAssayId).session(session)
     if(!assay) throw new Error("Collector not Fouund")
 
     dump.status = "Resolved";
@@ -409,6 +434,7 @@ export const resolveDumpRequestService = async (dumbId, collectorAssayId) => {
       <p>If you have any further concerns or need assistance, feel free to reply to this email 📩.</p>
     `;
     await sendEmail(user.email, subject, html);
+    return dump;
     
   } catch (error) {
       if(!committed){
@@ -419,4 +445,56 @@ export const resolveDumpRequestService = async (dumbId, collectorAssayId) => {
     throw new Error("Failed resolving dumping report request. Please try again.");
     
   }
+}
+
+export const getDumpRequestToCollector = async (collectorAssayId) => {
+  const dumpRequests = await IllegalDump.find({ collector: collectorAssayId })
+    .populate('reporter', 'name email phoneNumber')
+    .populate({
+      path: 'collector',
+      populate: {
+        path: 'user',
+        select: 'name email phoneNumber' 
+      }
+    });
+
+  if (!dumpRequests || dumpRequests.length === 0) {
+    return [];
+  }
+
+  return dumpRequests.map(entry => {
+    if (!entry.reporter) {
+      return {
+        id: entry._id,
+        name: 'Unknown User',
+        email: 'N/A',
+        phoneNumber: 'N/A',
+        materials: entry.materials,
+        status: entry.status,
+        recyclingDate: entry.recyclingDate,
+        error: 'Associated user not found'
+      };
+    }
+
+    const collectorUser = entry.collector ? entry.collector.user : null;
+
+    return {
+      dumpId: entry._id,
+      userId: entry.reporter._id,
+      userName: entry.reporter.name,
+      userEmail: entry.reporter.email,
+      userPhoneNumber: entry.reporter.phoneNumber,
+      collectorId: entry.collector ? entry.collector._id : null,
+      collectorName: collectorUser ? collectorUser.name : 'N/A',
+      collectorPhoneNumber: collectorUser ? collectorUser.phoneNumber : 'N/A',
+      materials: entry.materials,
+      status: entry.status,
+      reportDate: entry.reportDate,
+      location: entry.location,
+      serviceArea: entry.collector ? entry.collector.serviceArea : 'N/A',
+      collectionDate: entry.collector ? entry.collector.collectionDate : null,
+      totalQuantityCollected:entry.collector.totalQuantityCollected,
+      description: entry.description
+    };
+  });
 }

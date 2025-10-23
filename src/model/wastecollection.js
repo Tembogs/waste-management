@@ -31,8 +31,7 @@ const wasteSchema = new Schema({
 requestDate: {
   type: String,
   default: () => dayjs().format('YYYY-MM-DD')
-}
-,
+},
 
   images: String,
   status: {

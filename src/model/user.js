@@ -39,14 +39,6 @@ const userSchema = new Schema({
       default: "Other",
       required: true
     },
-    materials: [
-      {
-        type: String,
-        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General',
-        required:false
-      }
-    ],
     Reward: {
       type: Number,
       default: 0
