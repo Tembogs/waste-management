@@ -44,6 +44,18 @@ const userSchema = new Schema({
       type: Number,
       default: 0
     },
+    Waste: {
+      type: Number,
+      default: 0
+    },
+    IllegalDump: {
+      type: Number,
+      default: 0
+    },
+    Recycling: {
+      type: Number,
+      default: 0
+    },
     createdAt:{
         type: Date,
         default: Date.now
