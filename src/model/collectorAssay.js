@@ -58,6 +58,23 @@ const collectorAssaySchema = new Schema({
         type: Date,
         default: Date.now
       }
+    },
+    {
+      recycleType: {
+        type: String,
+        enum: ['General', 'Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
+        default: 'General',
+        required: true
+      },
+      quantityCollected: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now
+      }
     }
   ],
   materials: [
