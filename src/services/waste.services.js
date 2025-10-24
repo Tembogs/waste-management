@@ -585,3 +585,5 @@ export const getWasteRequestToCollector = async (collectorAssayId) => {
     };
   });
 };
+
+

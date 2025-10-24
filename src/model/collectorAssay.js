@@ -56,7 +56,7 @@ const collectorAssaySchema = new Schema({
       },
       updatedAt: {
         type: Date,
-        default: Date.now
+        default: () => dayjs().format('DD-MM-YYYY')
       }
     },
     {
@@ -73,7 +73,7 @@ const collectorAssaySchema = new Schema({
       },
       updatedAt: {
         type: Date,
-        default: Date.now
+        default:() => dayjs().format('DD-MM-YYYY')
       }
     }
   ],
