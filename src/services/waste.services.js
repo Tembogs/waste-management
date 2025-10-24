@@ -479,18 +479,22 @@ export const collectWasteRequest = async (wasteId, collectorAssayId) => {
 
     waste.materials.forEach(({ wasteType, quantity }) => {
   
-      const stat = assay.collectionStats.find(s => s.wasteType === wasteType);
+      const stat = assay.collectionStats.find(
+          s => s.category === "waste" && s.material === wasteType
+        );
 
-      if (stat && waste.status === "Collected") {
-        stat.quantityCollected += quantity;
-        stat.updatedAt = new Date();
-      } else {
-        assay.collectionStats.push({
-          wasteType: wasteType,
-          quantityCollected: quantity,
-          updatedAt: new Date()
-        });
-      }
+        if (stat && wasteType.status === "Collected") {
+          stat.quantityCollected += quantity;
+          stat.updatedAt = new Date();
+        } else {
+          assay.collectionStats.push({
+            category: "waste",
+            material: wasteType,
+            quantityCollected: quantity,
+            updatedAt: new Date()
+          });
+        }
+
     });
    assay.totalQuantityCollected += waste.materials.reduce((sum, m) => sum + m.quantity, 0);
    await assay.save({session})

@@ -277,24 +277,6 @@ export const acceptRecycleRequestService = async (recycleId, collectorAssayId) =
     // Update assay
     assay.status = "Accepted";
     assay.acceptedRequests += 1;
-
-    recycle.materials.forEach(({ recycleType, quantity }) => {
-  
-      const stat = assay.collectionStats.find(s => s.recycleType === recycleType);
-
-      if (stat) {
-        stat.quantityCollected += quantity;
-        stat.updatedAt = new Date();
-      } else {
-        assay.collectionStats.push({
-          recycleType: recycleType,
-          quantityCollected: quantity,
-          updatedAt: new Date()
-        });
-      }
-    });
-
-    assay.totalQuantityCollected += recycle.materials.reduce((sum, m) => sum + m.quantity, 0);
     await assay.save({ session });
 
     await session.commitTransaction();
@@ -469,18 +451,22 @@ export const collectRecycleRequest = async (recycleId, collectorAssayId) => {
 
     recycle.materials.forEach(({ recycleType, quantity }) => {
   
-      const stat = assay.collectionStats.find(s => s.recycleType === recycleType);
+      const stat = assay.collectionStats.find(
+          s => s.category === "recycle" && s.material === recycleType
+        );
 
-      if (stat && recycle.status === "Collected") {
-        stat.quantityCollected += quantity;
-        stat.updatedAt = new Date();
-      } else {
-        assay.collectionStats.push({
-          recycleType: recycleType,
-          quantityCollected: quantity,
-          updatedAt: new Date()
-        });
-      }
+        if (stat && recycle.status === "Collected") {
+          stat.quantityCollected += quantity;
+          stat.updatedAt = new Date();
+        } else {
+          assay.collectionStats.push({
+            category: "recycle",
+            material: recycleType,
+            quantityCollected: quantity,
+            updatedAt: new Date()
+          });
+        }
+
     });
    assay.totalQuantityCollected += recycle.materials.reduce((sum, m) => sum + m.quantity, 0);
    await assay.save({session})

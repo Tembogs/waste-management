@@ -42,54 +42,27 @@ const collectorAssaySchema = new Schema({
     min: 0
   },
   collectionStats: [
-    {
-      wasteType: {
-        type: String,
-        enum: ['General', 'Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General',
-        required: true
-      },
-      quantityCollected: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-      updatedAt: {
-        type: Date,
-        default: () => dayjs().format('DD-MM-YYYY')
-      }
-    },
-    {
-      recycleType: {
-        type: String,
-        enum: ['General', 'Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General',
-        required: true
-      },
-      quantityCollected: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-      updatedAt: {
-        type: Date,
-        default:() => dayjs().format('DD-MM-YYYY')
-      }
-    }
-  ],
-  materials: [
-    {
-      wasteType: {
-        type: String,
-        enum: ['General', 'Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        required: true
-      },
-      quantityExpected: {
-        type: Number,
-        min: 0
-      }
-    }
-  ],
+        {
+          category: {
+            type: String,
+            enum: ["waste", "recycle"],
+          },
+          material: {
+            type: String,
+            enum: ["General", "Paper", "Plastic", "Glass", "Metal", "Organic", "E-waste"],
+          },
+          quantityCollected: {
+            type: Number,
+            default: 0,
+            min: 0
+          },
+          updatedAt: {
+            type: Date,
+            default: Date.now
+          }
+        }
+      ]
+,
   serviceArea: {
     type: String
   },
