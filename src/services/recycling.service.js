@@ -9,13 +9,14 @@ const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "M
 
 export const createRecycleRequest = async (recycleData) => {
   try {
-    const user = await User.findById(recycleData.userId).select("name email phoneNumber gender");
+    const user = await User.findById(recycleData.userId).select("name email phoneNumber gender Reward requestStats Recycling");
     if (!user) throw new Error("User not found");
 
-    if (!recycleData.materials || !recycleData.materials.length) {
-      console.warn("No materials provided for recycling.");
-      return null;
-    }
+    if (!recycleData.materials?.length) return null;
+
+if (!user.requestStats) user.requestStats = [];
+
+const totalWaste = recycleData.materials.reduce((sum, m) => sum + m.quantity, 0);
       const materialPoints = {
       General: 1,
       Paper: 2,
@@ -37,6 +38,23 @@ export const createRecycleRequest = async (recycleData) => {
     
       return Math.round(totalPoints); 
     };
+
+    recycleData.materials.forEach(({ recycleType, quantity }) => {
+  const stat = user.requestStats.find(
+    s => s.category === "recycle" && s.material === recycleType
+  );
+  if (stat) {
+    stat.quantityCollected += quantity;
+    stat.updatedAt = new Date();
+  } else {
+    user.requestStats.push({
+      category: "recycle",
+      material: recycleType,
+      quantityCollected: quantity,
+      updatedAt: new Date(),
+    });
+  }
+});
     const pointsEarned = calculatePoints(recycleData.materials);
     
     const reward = new Reward({
@@ -47,7 +65,9 @@ export const createRecycleRequest = async (recycleData) => {
     });
     
     await reward.save();
-    
+   
+    user.Recycling += totalWaste;
+    user.Reward = (user.Reward || 0) + pointsEarned;
 
      const normalizedLocation = recycleData.location?.trim().toLowerCase();
       const assignedCollector = await CollectorAssay.findOne({
@@ -58,8 +78,7 @@ export const createRecycleRequest = async (recycleData) => {
       if (assignedCollector) {
         collectorUser = await User.findById(assignedCollector.user).select("email name gender serviceArea");
       }
-       const rewardArray = [user.Reward || 0, pointsEarned];
-        user.Reward = rewardArray.reduce((total, value) => total + value, 0);
+       
         await user.save();
     const recycleRequest = new Recycling({
       user: user._id,
@@ -501,6 +520,9 @@ export const collectRecycleRequest = async (recycleId, collectorAssayId) => {
 }
 export const deleteAllUser = async () =>{
   const user = await Recycling.deleteMany()
+  await User.updateMany({}, {
+      $set: { Recycling: 0, requestStats: [] }
+    });
   return user
 }
 

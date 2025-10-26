@@ -10,12 +10,12 @@ const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "M
 
 export const reportIllegalDump = async (illegalData) => {
   try {
-    const user = await User.findById(illegalData.userId).select("name email phoneNumber gender");
+    const user = await User.findById(illegalData.userId).select("name email phoneNumber  requestStats Dump");
     if (!user) throw new Error("User not found");
-    if (!illegalData.materials || !illegalData.materials.length) {
-          console.warn("No description provided for recycling.");
-          return null;
-        }
+
+    if (!illegalData.materials?.length) return null;
+
+    if (!user.requestStats) user.requestStats = [];
           const materialPoints = {
           General: 1,
           Paper: 2,
@@ -25,6 +25,7 @@ export const reportIllegalDump = async (illegalData) => {
           Organic: 2,
           'E-waste': 5
         };
+        const totalWaste = illegalData.materials.reduce((sum, m) => sum + m.quantity, 0);
          const calculatePoints = (materials) => {
           let totalPoints = 0;
           materials.forEach(item => {
@@ -36,6 +37,23 @@ export const reportIllegalDump = async (illegalData) => {
         
           return Math.round(totalPoints); 
         };
+
+        illegalData.materials.forEach(({ dumpType, quantity }) => {
+  const stat = user.requestStats.find(
+    s => s.category === "illegal" && s.material === dumpType
+  );
+  if (stat) {
+    stat.quantityCollected += quantity;
+    stat.updatedAt = new Date();
+  } else {
+    user.requestStats.push({
+      category: "illegal",
+      material: dumpType,
+      quantityCollected: quantity,
+      updatedAt: new Date(),
+    });
+  }
+});
         const pointsEarned = calculatePoints(illegalData.materials);
         
         const reward = new Reward({
@@ -56,8 +74,8 @@ export const reportIllegalDump = async (illegalData) => {
       if (assignedCollector) {
         collectorUser = await User.findById(assignedCollector.user).select("email name gender serviceArea");
       }
-       const rewardArray = [user.Reward || 0, pointsEarned];
-        user.Reward = rewardArray.reduce((total, value) => total + value, 0);
+       user.Recycling += totalWaste;
+        user.Reward = (user.Reward || 0) + pointsEarned;
         await user.save();
 
     const illegalRequest = new IllegalDump({
@@ -253,6 +271,9 @@ export const deleteIllegalEntry = async (id) => {
 
 export const deleteAllDump = async () =>{
   const dump = await IllegalDump.deleteMany()
+  await User.updateMany({}, {
+      $set: { Recycling: 0, requestStats: [] }
+    });
   return dump
 }
 

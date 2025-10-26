@@ -44,18 +44,40 @@ const userSchema = new Schema({
       type: Number,
       default: 0
     },
-    Waste: {
-      type: Number,
-      default: 0
-    },
-    IllegalDump: {
-      type: Number,
-      default: 0
-    },
+    requestStats: [
+        {
+          category: {
+            type: String,
+            enum: ["waste", "recycle", "illegal"],
+          },
+          material: {
+            type: String,
+            enum: ["General", "Paper", "Plastic", "Glass", "Metal", "Organic", "E-waste"],
+          },
+          quantityCollected: {
+            type: Number,
+            default: 0,
+            min: 0
+          },
+          updatedAt: {
+            type: Date,
+            default: Date.now
+          }
+        }
+      ],
+      Waste: {
+          type: Number,
+          default: 0
+        },
     Recycling: {
       type: Number,
       default: 0
+        },
+    Dump: {
+      type: Number,
+      default: 0
     },
+
     createdAt:{
         type: Date,
         default: Date.now

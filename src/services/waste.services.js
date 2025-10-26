@@ -8,29 +8,50 @@ import mongoose from "mongoose";
  const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
  
 export const createWasteRequest = async (wasteData) => {
-  const user = await User.findById(wasteData.userId).select("name email phoneNumber gender Reward");
-  if (!user) throw new Error("User not found");
+const user = await User.findById(wasteData.userId)
+  .select("name email phoneNumber gender Reward requestStats Waste");
+if (!user) throw new Error("User not found");
 
-  if (!wasteData.materials || !wasteData.materials.length) return null;
+if (!wasteData.materials?.length) return null;
 
-  const materialPoints = {
-    General: 1,
-    Paper: 2,
-    Plastic: 3,
-    Glass: 2,
-    Metal: 4,
-    Organic: 2,
-    'E-waste': 5
-  };
+if (!user.requestStats) user.requestStats = [];
 
-  const calculatePoints = (materials) => {
+const totalWaste = wasteData.materials.reduce((sum, m) => sum + m.quantity, 0);
+
+wasteData.materials.forEach(({ wasteType, quantity }) => {
+  const stat = user.requestStats.find(
+    s => s.category === "waste" && s.material === wasteType
+  );
+  if (stat) {
+    stat.quantityCollected += quantity;
+    stat.updatedAt = new Date();
+  } else {
+    user.requestStats.push({
+      category: "waste",
+      material: wasteType,
+      quantityCollected: quantity,
+      updatedAt: new Date(),
+    });
+  }
+});
+
+const materialPoints = {
+      General: 1,
+      Paper: 2,
+      Plastic: 3,
+      Glass: 2,
+      Metal: 4,
+      Organic: 2,
+      "E-waste": 5
+    };
+const calculatePoints = (materials) => {
     return Math.round(materials.reduce((total, item) => {
       const base = materialPoints[item.wasteType] || 0;
       const bonus = item.quantity > 50 ? 1.1 : 1;
       return total + base * item.quantity * bonus;
     }, 0));
   };
-
+  
   const pointsEarned = calculatePoints(wasteData.materials);
 
   const reward = new Reward({
@@ -41,24 +62,20 @@ export const createWasteRequest = async (wasteData) => {
   });
   await reward.save();
 
-  console.log("wdl", wasteData.location);
-  
-   
-
   const normalizedLocation = wasteData.location?.trim().toLowerCase();
-  const assignedCollector = await CollectorAssay.findOne({
-    serviceArea: normalizedLocation
-  });
-
-
-  let collectorUser = null;
+        const assignedCollector = await CollectorAssay.findOne({
+          serviceArea: normalizedLocation
+        });
+    let collectorUser = null;
   if (assignedCollector) {
     collectorUser = await User.findById(assignedCollector.user).select("email name gender serviceArea");
   }
-   const rewardArray = [user.Reward || 0, pointsEarned];
-    user.Reward = rewardArray.reduce((total, value) => total + value, 0);
-    await user.save();
 
+user.Waste += totalWaste;
+user.Reward = (user.Reward || 0) + pointsEarned;
+await user.save();
+
+  
     console.log("wdl",wasteData.location)
 
 
@@ -72,19 +89,10 @@ export const createWasteRequest = async (wasteData) => {
     status: wasteData.status,
     Reward: reward._id,
     collector:assignedCollector?._id || null,
-    createdAt:wasteData.createdAt
+    createdAt:wasteData.createdAt,
   });
   
   await wasteRequest.save();
-//   const responsePayload = {
-//   ...wasteRequest.toObject(), // converts Mongoose doc to plain object
-//   collector: collectorUser || null, // replaces the ID with full user info
-// };
-
-// return responsePayload;
-
-
-
  
   const materialSummary = wasteData.materials.map((item, i) =>
     `${i + 1}. ${item.quantity} ${item.unit} of ${item.wasteType}`
@@ -532,6 +540,9 @@ export const collectWasteRequest = async (wasteId, collectorAssayId) => {
 
 export const deleteAllUser = async () =>{
   const user = await Waste.deleteMany()
+  await User.updateMany({}, {
+    $set: { Waste: 0, requestStats: [] }
+  });
   return user
 }
 
