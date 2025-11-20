@@ -63,38 +63,25 @@ export const deleteAll = async (req, res) => {
 export const updateProfilePicture = async (req, res) => {
   try {
     const { id } = req.params;
-    const file = req.file;
+    const { avatarUrl } = req.body;
 
-    if (!file) {
-      return res.status(400).json({ error: 'No image file uploaded.' });
+    if (!avatarUrl) {
+      return res.status(400).json({ error: "Avatar URL is required" });
     }
 
-    // Upload to Cloudinary
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: 'profile_pictures' },
-      async (error, result) => {
-        if (error || !result?.secure_url) {
-          console.error('Cloudinary error:', error);
-          return res.status(500).json({ error: 'Image upload failed.' });
-        }
+    const updatedUser = await uploadProfilePicture(id, avatarUrl);
 
-        // Update user profile with Cloudinary URL
-        const updatedUser = await uploadProfilePicture(id, result.secure_url);
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
 
-        if (!updatedUser) {
-          return res.status(404).json({ error: 'User not found.' });
-        }
+    res.status(200).json({
+      message: "Profile picture updated successfully.",
+      user: updatedUser,
+    });
 
-        res.status(200).json({
-          message: 'Profile picture updated successfully.',
-          user: updatedUser,
-        });
-      }
-    );
-
-    stream.end(file.buffer);
   } catch (error) {
-    console.error('Error updating profile picture:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error("Error updating profile picture:", error);
+    res.status(500).json({ error: "Internal server error." });
   }
 };
