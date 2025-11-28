@@ -47,7 +47,7 @@ export const register = async (name, email, password, phoneNumber, role, locatio
       <h1>Hi ${genTitle(gender)} ${name},</h1>
       <p>Thank you for registering. We're excited to have you.</p>
     `;
-    await sendEmail(email, subject, html);
+    // await sendEmail(email, subject, html);
 
     await session.commitTransaction();
     session.endSession();
