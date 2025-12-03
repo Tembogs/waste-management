@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 
 configDotenv()
 
-const sendEmail = async (to, subject, html) => {
+export const sendEmail = async (to, subject, html) => {
     try {
         const transporter = nodemailer.createTransport({
             service: "gmail", // tells nodemailer to use Gmail’s SMTP
@@ -14,7 +14,7 @@ const sendEmail = async (to, subject, html) => {
         });
 
         const info = await transporter.sendMail({
-            from: "WasteWise Nigeria <onboarding@tembogs.dev>",
+            from: 'Waste Management <' + process.env.GMAIL_USER + '>', // sender address
             to,
             subject,
             html,
@@ -25,5 +25,3 @@ const sendEmail = async (to, subject, html) => {
         console.error("Error sending email: ", error);
     }
 };
-
-export default sendEmail;
