@@ -11,7 +11,7 @@ const app = express();
 dotenv.config();
 setUpMiddlewares(app);
 
-app.use(cors({ origin: 'https://waste-cleaning-2-qbnuyeuad-temitopes-projects-7a9b505b.vercel.app'}));
+app.use(cors({ origin: 'https://waste-cleaning-2.vercel.app'}));
 app.use('/api/users', userRoutes);
 app.use('/api/waste', wasteRoutes);
 app.use('/api/auth', authRouter);
