@@ -1,88 +1,139 @@
-import{Schema, model} from 'mongoose';
+import { Schema, model } from "mongoose";
 
-const userSchema = new Schema({
-  name :{
+const userSchema = new Schema(
+  {
+    name: {
       type: String,
-      required: true
-    },
-  email: {
-      type:String,
       required: true,
-      unique: true
-    },
-  password:{
-      type : String,
-      required: true
-    },
-  phoneNumber:{
-      type:Number,
-      required:true,
-      unique: true
-    },
-    bio:String,
-  role:{
-      type:String,
-      enum:["Houser", "Collector", "Community_admin"],
-      default:"Houser"
+      trim: true,
     },
 
-  location: {
-      type:String,
-      required: true
-    },
-  profilePicture: {
+    email: {
       type: String,
-      default: 'https://yourdomain.com/default-profile.png'
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
-    gender:{
+
+    password: {
+      type: String,
+      required: true,
+    },
+
+    phoneNumber: {
+      type: Number,
+      required: true,
+      unique: true,
+    },
+
+    bio: {
+      type: String,
+      default: "",
+    },
+
+    role: {
+      type: String,
+      enum: ["Houser", "Collector", "Community_admin"],
+      default: "Houser",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    profilePicture: {
+      type: String,
+      default: "https://res.cloudinary.com/...",
+    },
+
+    gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
       default: "Other",
-      required: true
+      required: true,
     },
-    Reward: {
+
+    totalWasteCollected: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0,
+    },
+
+    totalRecyclingCollected: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalIllegalDumpReports: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalRewardPointsEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    rewardPointsBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    rewardPointsReserved: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     requestStats: [
-        {
-          category: {
-            type: String,
-            enum: ["waste", "recycle", "illegal"],
-          },
-          material: {
-            type: String,
-            enum: ["General", "Paper", "Plastic", "Glass", "Metal", "Organic", "E-waste"],
-          },
-          quantityCollected: {
-            type: Number,
-            default: 0,
-            min: 0
-          },
-          updatedAt: {
-            type: Date,
-            default: Date.now
-          }
-        }
-      ],
-      Waste: {
+      {
+        category: {
+          type: String,
+          enum: ["waste", "recycle", "illegal"],
+          required: true,
+        },
+
+        material: {
+          type: String,
+          enum: [
+            "General",
+            "Paper",
+            "Plastic",
+            "Glass",
+            "Metal",
+            "Organic",
+            "E-waste",
+          ],
+          required: true,
+        },
+
+        quantityCollected: {
           type: Number,
-          default: 0
+          default: 0,
+          min: 0,
         },
-    Recycling: {
-      type: Number,
-      default: 0
+
+        updatedAt: {
+          type: Date,
+          default: Date.now,
         },
-    Dump: {
-      type: Number,
-      default: 0
-    },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
-    createdAt:{
-        type: Date,
-        default: Date.now
-      }
+const User = model("User", userSchema);
 
-}, {timestamps: true})
-const User = model("User", userSchema)
 export default User;

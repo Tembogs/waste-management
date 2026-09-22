@@ -7,57 +7,69 @@ import mongoose from "mongoose";
 
  const genTitle = (gender) => gender === 'Male' ? "Mr" : gender === "Female" ?"Mrs/Miss" : "Mx"
 
-export const register = async (name, email, password, phoneNumber, role, location, gender, profilePicture, bio) => {
+export const register = async (
+  name,
+  email,
+  password,
+  phoneNumber,
+  location,
+  gender,
+  profilePicture = null,
+  bio = ""
+) => {
   const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    const existingUser = await User.findOne({ email }).session(session);
-    if (existingUser) throw new Error("Email already registered");
+    session.startTransaction();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedLocation = location.trim().toLowerCase();
+
+    const existingUser = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        { phoneNumber },
+      ],
+    }).session(session);
+
+    if (existingUser) {
+      if (existingUser.email === normalizedEmail) {
+        throw new Error("Email already registered");
+      }
+
+      throw new Error("Phone number already registered");
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const normalizedLocation = location.trim().toLowerCase();
 
     const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       phoneNumber,
-      role,
+      role: "Houser",
       location: normalizedLocation,
       gender,
       profilePicture,
-      bio
+      bio,
     });
 
     await user.save({ session });
 
-    if (role === 'Collector') {
-      const collectorAssay = new CollectorAssay({
-        user: user._id,
-        collector: user._id,
-        serviceArea: normalizedLocation
-      });
-      await collectorAssay.save({ session });
-    }
-
-    const subject = "Welcome to WasteWise! System Nigeria";
-    const html = `
-      <h1>Hi ${genTitle(gender)} ${name},</h1>
-      <p>Thank you for registering. We're excited to have you.</p>
-    `;
-    await sendEmail(email, subject, html);
-
     await session.commitTransaction();
-    session.endSession();
 
     return user;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
     console.error("Registration error:", error.message);
-    return null;
+
+    throw new Error(error.message);
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -65,11 +77,19 @@ export const register = async (name, email, password, phoneNumber, role, locatio
 
 export const login = async (email, password) => {
   try {
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
     if (!user) return { error: "User not found" };
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) return { error: "Invalid password" };
+
+    // ...rest of your existing login code
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
       expiresIn: "1h"
@@ -84,12 +104,12 @@ export const login = async (email, password) => {
     }
      console.log("CollectorAssay found:", collectorAssay);
 
-    const subject = `Welcome back ${genTitle(user.gender)} ${user.name}`;
-    const html = `
-      <h1>Hi ${user.name},</h1>
-      <p>Thank you for getting back into the app with the intention to make our environment clean. We're excited to have you.</p>
-    `;
-    await sendEmail(user.email, subject, html);
+    // const subject = `Welcome back ${genTitle(user.gender)} ${user.name}`;
+    // const html = `
+    //   <h1>Hi ${user.name},</h1>
+    //   <p>Thank you for getting back into the app with the intention to make our environment clean. We're excited to have you.</p>
+    // `;
+    // await sendEmail(user.email, subject, html);
 
     const userData = {
       ...user.toObject(),

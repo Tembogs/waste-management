@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {createNewWaste,fetchAllWasteEntries, viewWasteStatusV2, editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest, deleteAll, getWasteRequestToCollectorController, } from "../controller/waste.controllers.js";
-import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
+import {isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 const router = Router();
 

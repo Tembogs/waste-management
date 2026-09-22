@@ -1,28 +1,65 @@
 import { Schema, model } from "mongoose";
 
-export const rewardSchema = new Schema({
-  user:{
-    type: Schema.Types.ObjectId,
-    ref: "User",
+const rewardSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+    collector: {
+      type: Schema.Types.ObjectId,
+      ref: "CollectorAssay",
+      default: null,
+    },
+
+    sourceRequest: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      refPath: "sourceType",
+    },
+
+    sourceType: {
+      type: String,
+      required: true,
+      enum: ["Waste", "Recycling", "IllegalDump"],
+    },
+
+    pointsEarned: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    rewardItem: {
+      type: String,
+      default: null,
+    },
+
+    status: {
+      type: String,
+      enum: ["Earned", "Cancelled"],
+      default: "Earned",
+    },
   },
-   collector:{
-    type: Schema.Types.ObjectId,
-    ref: "CollectorAssay",
-  },
-  pointsEarned: {
-    type: Number,
-    default: 0
-  },
-  rewardItem: String,
-  status: {
-    type: String,
-    default: 'Earned'
-  },
-  activityType: {
-    type: String,
-    enum: ['Recycling', 'WasteRequest', 'IllegalDumpReport'],
-    required: true
+  {
+    timestamps: true,
   }
-}, {timestamps: true})
-const Reward = model("Reward", rewardSchema)
+);
+
+// Prevent one request from generating multiple rewards
+rewardSchema.index(
+  {
+    sourceRequest: 1,
+    sourceType: 1,
+  },
+  {
+    unique: true,
+  }
+);
+
+const Reward = model("Reward", rewardSchema);
+
 export default Reward;

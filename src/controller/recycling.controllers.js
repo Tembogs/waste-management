@@ -120,32 +120,49 @@ export const collectrecycleRquest = async (req, res) => {
   }
 }
 
-export const getRecycleRequestToCollectorController = async (req, res) => {
+export const getRecycleRequestToCollectorController = async (
+  req,
+  res
+) => {
   try {
     const { collectorAssayId } = req.params;
 
     if (!collectorAssayId) {
-      return res.status(400).json({ error: 'Missing required parameters: collectorAssayId' });
+      return res.status(400).json({
+        error:
+          "Missing required parameter: collectorAssayId",
+      });
     }
 
     const loggedInUser = req.user;
 
-    const recycleRequests = await getRecycleRequestToCollector(collectorAssayId);
+    const recycleRequests =
+      await getRecycleRequestToCollector(
+        collectorAssayId
+      );
 
     return res.status(200).json({
       success: true,
+
       user: {
         id: loggedInUser._id,
         name: loggedInUser.name,
-        email: loggedInUser.email
+        email: loggedInUser.email,
       },
-      data: recycleRequests
+
+      data: recycleRequests,
     });
   } catch (error) {
-    console.error('Error fetching recycle requests:', error.message);
+    console.error(
+      "Error fetching recycle requests:",
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
-      error: error.message || 'Internal Server Error'
+      error:
+        error.message ||
+        "Internal Server Error",
     });
   }
 };

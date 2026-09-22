@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {createNewRecycle, fetchAllRecycleEntries ,editRecycle,removeRecycleEntry, acceptRecycleRequest, rejectRecycleRequest, collectrecycleRquest, routeRecycleRequest, deleteAll,  viewRecycleStatusV2, getRecycleRequestToCollectorController} from "../controller/recycling.controllers.js";
-import { admin, isCollector, isHouser,protect } from "../middlerware/auth.middleware.js";  
+import { isCollector, isHouser,protect } from "../middlerware/auth.middleware.js";  
 
 const router = Router();
 

@@ -1,10 +1,5 @@
 import cloudinary from "../cloudinary.js";
 import {getAllUsers, getUserbyId, updateUser, deleteUser, deleteAllUser , uploadProfilePicture} from "../services/user.services.js";
-// import cloudinary from '../config/cloudinary.js';
-// import { uploadProfilePicture } from '../services/userService.js';
-
-
-
 
 export const fetchAllUsers = async (req,res) =>{
   const {id} = req.params;

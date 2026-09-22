@@ -105,14 +105,26 @@ export const rejectIllegalDumpRequest = async (req, res) => {
 }
 
 export const resolveDumpingRequest = async (req, res) => {
-  const {dumpId, collectorAssayId} = req.body
-  try{
-     const resolveDump = await resolveDumpRequestService(dumpId, collectorAssayId)
-     res.status(200).json(resolveDump)
-  }catch(error){
-   res.status(400).json({message:error.message})
+  const {
+    dumpId,
+    collectorAssayId,
+    resolutionNote,
+  } = req.body;
+
+  try {
+    const resolvedDump = await resolveDumpRequestService(
+      dumpId,
+      collectorAssayId,
+      resolutionNote
+    );
+
+    res.status(200).json(resolvedDump);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
   }
-}
+};
 
 export const getDumpRequestToCollectorController = async (req, res) => {
   try {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { fetchAllUsers, fetchUserById, editUser,removeUser, deleteAll, updateProfilePicture } from "../controller/user.controller.js";
-import { protect, admin, isHouser, isCollector, upload, } from "../middlerware/auth.middleware.js";
+import { protect, isHouser, isCollector, upload, } from "../middlerware/auth.middleware.js";
 
 const router = Router();
 

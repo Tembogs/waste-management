@@ -1,64 +1,108 @@
-import { Schema,model } from "mongoose";
-import dayjs from "dayjs";
+import { Schema, model } from "mongoose";
 
-
-const illegalDumpSchema = new Schema({
- reporter: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-  collector: {
-        type: Schema.Types.ObjectId,
-        ref: 'CollectorAssay',
-        index: true
-      },
-  
-  location: {
-    type: String,
-    required: true
-  },
-  materials:[
-    {
-      dumpType: {
-        type: String,
-        enum: ['General','Paper', 'Plastic', 'Glass', 'Metal', 'Organic', 'E-waste'],
-        default: 'General',
-        required: true
-      },
-      quantity: {
-        type: Number,
-        required: true
-      },
-      unit: {
-        type: String,
-        enum: ['kg', 'items', 'liters'],
-        default: 'kg'
-      }
-    }
-  ],
-  
-  description: {
-    type:String,
-    required: true
-  },
-  Reward:{ 
-      type: Schema.Types.ObjectId, 
-      ref: "Reward" 
+const illegalDumpSchema = new Schema(
+  {
+    reporter: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
-  images: String,
-  
-  reportDate: {
-     type: String,
-    default: () => dayjs().format('DD-MM-YYYY')
-  },
 
-  status: {
-    type: String,
-    enum: ['Pending', 'InReview', "Rejected", 'Resolved'],
-    default: 'Pending'
+    collector: {
+      type: Schema.Types.ObjectId,
+      ref: "CollectorAssay",
+      default: null,
+      index: true,
+    },
+
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    materials: [
+      {
+        dumpType: {
+          type: String,
+          enum: [
+            "General",
+            "Paper",
+            "Plastic",
+            "Glass",
+            "Metal",
+            "Organic",
+            "E-waste",
+          ],
+          required: true,
+          default: "General",
+        },
+
+        quantity: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+
+        unit: {
+          type: String,
+          enum: ["kg", "items", "liters"],
+          default: "kg",
+        },
+      },
+    ],
+
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    images: {
+      type: String,
+    },
+
+    reportDate: {
+      type: Date,
+      default: Date.now,
+    },
+
+    resolutionDate: {
+      type: Date,
+      default: null,
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "Pending",
+        "InReview",
+        "Rejected",
+        "Resolved",
+       "Cancelled",
+      ],
+      default: "Pending",
+      index: true,
+    },
+
+    rejectionReason: {
+      type: String,
+      maxlength: 500,
+      default: null,
+    },
+
+    resolutionNote: {
+      type: String,
+      maxlength: 500,
+      default: null,
+    },
   },
-    rejectionReason: String
-}, {timestamps: true})
-const IllegalDump = model("IllegalDump", illegalDumpSchema)
+  {
+    timestamps: true,
+  }
+);
+
+const IllegalDump = model("IllegalDump", illegalDumpSchema);
+
 export default IllegalDump;

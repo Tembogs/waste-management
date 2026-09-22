@@ -6,23 +6,27 @@ import wasteRoutes from './routes/waste.routes.js';
 import authRouter from './routes/auth.routes.js';
 import recycleRoutes from './routes/recycle.routes.js';
 import illegalDumpRoutes from './routes/illegalDump.routes.js';
+import redemptionRoutes from './routes/rewardRedemption.routes.js';
+import adminRoutes from "./routes/admin.routes.js"
 import cors from 'cors';
 const app = express();
 dotenv.config();
 setUpMiddlewares(app);
 
-app.use(cors({ origin: 'https://waste-cleaning-2.vercel.app'}));
+app.use(cors({ origin: ['https://waste-cleaning-2.vercel.app', 'http://localhost:5173'] }));
 // app.use(cors({ origin: 'http://localhost:5173'}));
 app.use('/api/users', userRoutes);
 app.use('/api/waste', wasteRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/recycle', recycleRoutes);
 app.use('/api/dump', illegalDumpRoutes);
+app.use("/api/reward", redemptionRoutes);
+app.use("/api/admin", adminRoutes)
 
 app.get('/', (req, res) => {
   res.json({
     message: 'API is running...',
-    timestemp: new Date().toString()
+    timestamp: new Date().toString()
   })
 
 });

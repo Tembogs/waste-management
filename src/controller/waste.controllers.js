@@ -25,16 +25,18 @@ export const fetchAllWasteEntries = async (req, res) => {
   }
 };
 
-
-
 export const viewWasteStatusV2 = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized: Missing user ID" });
+      return res.status(401).json({
+        message: "Unauthorized: Missing user ID",
+      });
     }
 
     const userId = req.user.id;
+
     const statusInfo = await getWasteStatusV2(userId);
+
     res.status(200).json(statusInfo);
   } catch (error) {
     console.error("--- UNHANDLED ERROR IN viewWasteStatusV2 ---");
@@ -43,8 +45,9 @@ export const viewWasteStatusV2 = async (req, res) => {
     console.error("Error Stack:", error.stack);
     console.error("Full Error Object:", error);
     console.error("--- END OF ERROR ---");
-    res.status(400).json({ 
-        errorMessage: error.message 
+
+    res.status(400).json({
+      errorMessage: error.message,
     });
   }
 };
@@ -52,10 +55,16 @@ export const viewWasteStatusV2 = async (req, res) => {
 
 export const editWaste = async (req, res) => {
   try {
-    const updatedWaste = await updatewaste(req.params.id, req.body);
+    const updatedWaste = await updatewaste(
+      req.params.id,
+      req.body
+    );
+
     res.status(200).json(updatedWaste);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      message: error.message,
+    });
   }
 };
 
@@ -82,7 +91,6 @@ export const deleteAll = async (req, res) => {
     res.status(400).json({message: error.message})
   }
 }
-
 
 
 
@@ -113,14 +121,20 @@ export const rejectWasteRequest = async (req, res) => {
 export const collectorView = async (req, res) => {
   try {
     const collectorDet = await getCollectorStat(req.params.id);
-     if (!collectorDet) {
-      return res.status(404).json({ message: "CollectorAssay not found for this user" });
+
+    if (!collectorDet) {
+      return res.status(404).json({
+        message: "CollectorAssay not found for this user",
+      });
     }
+
     res.status(200).json(collectorDet);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      message: error.message,
+    });
   }
-}
+};
 
 export const routeWasteRequest = async (req, res) => {
   const { wasteId, collectorAssayId } = req.body;
@@ -133,16 +147,31 @@ export const routeWasteRequest = async (req, res) => {
 }
 
 export const collectWasteRquest = async (req, res) => {
-  const {wasteId, collectorAssayId}= req.body;
-  try{
-   const collect = await collectWasteRequest(wasteId, collectorAssayId)
-   res.status(200).json({mesaage: "Waste request collected", data: collect})
-  }catch(error){
-  res.status(400).json({error: error.message})
+  const {
+    wasteId,
+    collectorAssayId,
+    materials,
+    collectionNote,
+  } = req.body;
+
+  try {
+    const collect = await collectWasteRequest(
+      wasteId,
+      collectorAssayId,
+      materials,
+      collectionNote
+    );
+
+    res.status(200).json({
+      message: "Waste request collected",
+      data: collect,
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: error.message,
+    });
   }
-}
-
-
+};
 
 
 export const getWasteRequestToCollectorController = async (req, res) => {

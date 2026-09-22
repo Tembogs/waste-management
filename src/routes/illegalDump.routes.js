@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import {reportNewILLegalDump, fetchAllIllegalEntries,editIllegalEntryById,removeIllegalEntry, acceptIllegalDumpRequest, rejectIllegalDumpRequest, resolveDumpingRequest,viewIllegalStatusV2, deleteAll, getDumpRequestToCollectorController} from "../controller/illegalDump.controller.js";
-import { admin, isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
+import { isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 
 const router = Router();

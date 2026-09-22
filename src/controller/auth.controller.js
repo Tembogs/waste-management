@@ -1,15 +1,36 @@
 import * as authServices from "../services/auth.services.js";
 
 export const register = async (req, res) => {
-  const { name, email, password, phoneNumber, role, location, gender } = req.body;
+  try {
+    const {
+      name,
+      email,
+      password,
+      phoneNumber,
+      location,
+      gender,
+      profilePicture,
+      bio,
+    } = req.body;
 
-  const user = await authServices.register(name, email, password, phoneNumber, role, location, gender);
+    const user = await authServices.register(
+      name,
+      email,
+      password,
+      phoneNumber,
+      location,
+      gender,
+      profilePicture,
+      bio
+    );
 
-  if (!user) {
-    return res.status(400).json({ message: "Invalid credentials, could not register" });
+    return res.status(201).json(user);
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
-
-  res.status(201).json(user);
 };
 
 
