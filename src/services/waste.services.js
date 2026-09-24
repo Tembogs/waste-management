@@ -43,10 +43,11 @@ export const createWasteRequest = async (wasteData) => {
     location: normalizedLocation,
     requestDate: new Date(),
     collectionDate: null,
+    address:wasteData.address,
     images: wasteData.images || null,
     status: "Pending",
     rejectionReason: null,
-    collectionNote: null,
+    collectionNote: wasteData.collectionNote,
     collector: assignedCollector?._id || null,
   });
 

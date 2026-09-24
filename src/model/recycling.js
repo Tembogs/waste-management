@@ -58,7 +58,10 @@ const recyclingSchema = new Schema(
       required: true,
       trim: true,
     },
-
+    address:{
+      type: String,
+      required:false
+    },
     requestDate: {
       type: Date,
       default: Date.now,

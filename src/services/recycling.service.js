@@ -44,10 +44,12 @@ export const createRecycleRequest = async (recycleData) => {
       user: user._id,
       materials,
       location: normalizedLocation,
+      address:recycleData.address,
+      images: recycleData.images || null,
       status: "Pending",
       collector: assignedCollector?._id || null,
       collectionDate: null,
-      collectionNote: null,
+      collectionNote: recycleData.collectionNote,
     });
 
     await recycleRequest.save();

@@ -60,26 +60,17 @@ export const reportIllegalDump = async (illegalData) => {
      */
     const illegalRequest = new IllegalDump({
       reporter: user._id,
-
       collector: assignedCollector?._id || null,
-
       location: normalizedLocation,
-
       materials,
-
+      address:illegalData.address,
       description: illegalData.description.trim(),
-
       images: illegalData.images || null,
-
       reportDate: new Date(),
-
       resolutionDate: null,
-
       status: "Pending",
-
       rejectionReason: null,
-
-      resolutionNote: null,
+      resolutionNote: illegalData.resolutionNote,
     });
 
     await illegalRequest.save();

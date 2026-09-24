@@ -21,7 +21,10 @@ const illegalDumpSchema = new Schema(
       required: true,
       trim: true,
     },
-
+    address:{
+      type: String,
+      required:false
+    },
     materials: [
       {
         dumpType: {
