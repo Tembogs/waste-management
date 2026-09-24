@@ -15,9 +15,7 @@ router.patch( "/users/:userId/status", protect, requireAdmin, setUserActiveStatu
 // admin to collector only
 router.get("/collectors", protect, requireAdmin, getAllCollectorsController);
 
-// router.get("/collectors/:collectorUserId",protect, requireAdmin, getCollectorDetailsController);
-
-router.get("/collectors/:collectorUserId",protect, isCollector, getCollectorDetailsController);
+router.get("/collectors/:collectorUserId",protect, requireAdmin, getCollectorDetailsController);
 
 router.patch("/collectors/:collectorUserId/service-area", protect, requireAdmin, updateCollectorServiceAreaController);
 
