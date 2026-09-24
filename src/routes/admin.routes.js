@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAdmin , protect} from "../middlerware/auth.middleware.js";
+import { requireAdmin , protect, isCollector} from "../middlerware/auth.middleware.js";
 import { approveRewardRedemptionController, cancelIllegalDumpController, cancelRecyclingRequestController, cancelWasteRequestController, createAdminController, createManagedUserController, getAdminDashboardStatsController, getAdminRequestByIdController, getAllAdminRequestsController, getAllCollectorsController, getAllManagedUsersController, getAllRewardRedemptionsController, getCollectorDetailsController, getCurrentRewardSettingController, getRewardRedemptionByIdController, markRewardRedemptionAsPaidController, reassignRequestController, rejectRewardRedemptionController, setUserActiveStatusController, updateCollectorServiceAreaController, updateRewardSettingController } from "../controller/admin.controller.js";
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.patch( "/users/:userId/status", protect, requireAdmin, setUserActiveStatu
 // admin to collector only
 router.get("/collectors", protect, requireAdmin, getAllCollectorsController);
 
-router.get("/collectors/:collectorUserId",protect, requireAdmin, getCollectorDetailsController);
+router.get("/collectors/:collectorUserId",protect, isCollector, requireAdmin, getCollectorDetailsController);
 
 router.patch("/collectors/:collectorUserId/service-area", protect, requireAdmin, updateCollectorServiceAreaController);
 

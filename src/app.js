@@ -8,6 +8,7 @@ import recycleRoutes from './routes/recycle.routes.js';
 import illegalDumpRoutes from './routes/illegalDump.routes.js';
 import redemptionRoutes from './routes/rewardRedemption.routes.js';
 import adminRoutes from "./routes/admin.routes.js"
+import notificationRoutes from "./routes/notification.routes.js"
 import cors from 'cors';
 const app = express();
 dotenv.config();
@@ -22,6 +23,7 @@ app.use('/api/recycle', recycleRoutes);
 app.use('/api/dump', illegalDumpRoutes);
 app.use("/api/reward", redemptionRoutes);
 app.use("/api/admin", adminRoutes)
+app.use("/api/notifications",notificationRoutes);
 
 app.get('/', (req, res) => {
   res.json({
