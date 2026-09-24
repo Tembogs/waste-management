@@ -15,9 +15,9 @@ router.delete('/', deleteAll)
 // Collector Section
 router.post("/accept",protect,isCollector,acceptWasteRequest);
 router.post("/reject",protect,isCollector,rejectWasteRequest);
-router.get("/collector/:id",protect,isCollector,collectorView);
+router.get("/collector/:collectorAssayId",protect,isCollector,collectorView);
 router.post("/route", protect, isCollector, routeWasteRequest)
 router.post("/collect", protect, isCollector, collectWasteRquest)
-router.get("/:collectorAssayId", protect, isCollector, getWasteRequestToCollectorController)
+router.get("/:id", protect, isCollector, getWasteRequestToCollectorController)
 
 export default router;
