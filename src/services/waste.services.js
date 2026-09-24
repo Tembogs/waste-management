@@ -902,9 +902,8 @@ export const deleteAllUser = async () =>{
 }
 
 
-
-export const getWasteRequestToCollector = async (collectorAssayId) => {
-  const wasteRequests = await Waste.find({ collector: collectorAssayId })
+export const getWasteRequestToCollector = async (id) => {
+  const wasteRequests = await Waste.find({ collector: id })
     .populate('user', 'name email phoneNumber')
     .populate({
       path: "collector",
@@ -957,4 +956,8 @@ export const getWasteRequestToCollector = async (collectorAssayId) => {
   });
 };
 
+export const getAllWasteRequest = async () => {
+  const WasteRequest = await Waste.find().populate('collector', 'name email phoneNumber');
+  return WasteRequest;
+}
 

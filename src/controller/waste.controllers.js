@@ -1,5 +1,5 @@
 import CollectorAssay from "../model/collectorAssay.js";
-import {createWasteRequest, getAllWasteEntries, getWasteStatusV2, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat, collectWasteRequest, routecollectorService, deleteAllUser, getWasteRequestToCollector} from "../services/waste.services.js";
+import {createWasteRequest, getAllWasteEntries, getWasteStatusV2, updatewaste, deleteWasteEntry,acceptWasteRequestService, rejectWasteRequestService, getCollectorStat, collectWasteRequest, routecollectorService, deleteAllUser, getWasteRequestToCollector, getAllWasteRequest} from "../services/waste.services.js";
 
 
 export const createNewWaste = async (req, res) => {
@@ -120,7 +120,7 @@ export const rejectWasteRequest = async (req, res) => {
 
 export const collectorView = async (req, res) => {
   try {
-    const collectorDet = await getCollectorStat(req.params.id);
+    const collectorDet = await getCollectorStat(req.params.collectorAssayId);
 
     if (!collectorDet) {
       return res.status(404).json({
@@ -176,15 +176,15 @@ export const collectWasteRquest = async (req, res) => {
 
 export const getWasteRequestToCollectorController = async (req, res) => {
   try {
-    const { collectorAssayId } = req.params;
+    const { id } = req.params;
 
-    if (!collectorAssayId) {
-      return res.status(400).json({ error: 'Missing required parameters: collectorAssayId' });
+    if (!id) {
+      return res.status(400).json({ error: 'Missing required parameters: id' });
     }
 
     const loggedInUser = req.user; // Comes from middleware
 
-    const wasteRequests = await getWasteRequestToCollector(collectorAssayId);
+    const wasteRequests = await getWasteRequestToCollector(id);
 
     return res.status(200).json({
       success: true,
@@ -201,5 +201,14 @@ export const getWasteRequestToCollectorController = async (req, res) => {
       success: false,
       error: error.message || 'Internal Server Error'
     });
+  }
+};
+
+export const fetchAllWasteRequest = async (req, res) => {
+  try {
+    const wasteRequest = await getAllWasteRequest();
+    res.status(200).json(wasteRequest);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };

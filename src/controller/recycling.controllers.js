@@ -125,12 +125,12 @@ export const getRecycleRequestToCollectorController = async (
   res
 ) => {
   try {
-    const { collectorAssayId } = req.params;
+    const { id } = req.params;
 
-    if (!collectorAssayId) {
+    if (!id) {
       return res.status(400).json({
         error:
-          "Missing required parameter: collectorAssayId",
+          "Missing required parameter: id",
       });
     }
 
@@ -138,7 +138,7 @@ export const getRecycleRequestToCollectorController = async (
 
     const recycleRequests =
       await getRecycleRequestToCollector(
-        collectorAssayId
+        id
       );
 
     return res.status(200).json({

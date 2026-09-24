@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {createNewWaste,fetchAllWasteEntries, viewWasteStatusV2, editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest, deleteAll, getWasteRequestToCollectorController, } from "../controller/waste.controllers.js";
+import {createNewWaste,fetchAllWasteEntries, viewWasteStatusV2, editWaste,removeWasteEntry, acceptWasteRequest, rejectWasteRequest, collectorView, routeWasteRequest, collectWasteRquest, deleteAll, getWasteRequestToCollectorController, fetchAllWasteRequest, } from "../controller/waste.controllers.js";
 import {isCollector, isHouser, protect } from "../middlerware/auth.middleware.js";
 
 const router = Router();
@@ -15,9 +15,10 @@ router.delete('/', deleteAll)
 // Collector Section
 router.post("/accept",protect,isCollector,acceptWasteRequest);
 router.post("/reject",protect,isCollector,rejectWasteRequest);
-router.get("/collector/:id",protect,isCollector,collectorView);
+router.get("/collector/:collectorAssayId",protect,isCollector,collectorView);
 router.post("/route", protect, isCollector, routeWasteRequest)
 router.post("/collect", protect, isCollector, collectWasteRquest)
-router.get("/:collectorAssayId", protect, isCollector, getWasteRequestToCollectorController)
+router.get("/:id", protect, isCollector, getWasteRequestToCollectorController)
+router.get("/",protect, isCollector, fetchAllWasteRequest);
 
 export default router;

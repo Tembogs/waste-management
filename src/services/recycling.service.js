@@ -1107,10 +1107,10 @@ export const deleteAllUser = async () =>{
 
 
 export const getRecycleRequestToCollector = async (
-  collectorAssayId
+  id
 ) => {
   const recycleRequests = await Recycling.find({
-    collector: collectorAssayId,
+    collector: id,
   })
     .populate(
       "user",

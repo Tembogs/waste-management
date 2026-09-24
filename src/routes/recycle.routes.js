@@ -16,5 +16,5 @@ router.post("/accept",protect,isCollector,acceptRecycleRequest);
 router.post("/reject",protect,isCollector,rejectRecycleRequest);
 router.post("/route", protect, isCollector, routeRecycleRequest)
 router.post("/collect", protect, isCollector, collectrecycleRquest)
-router.get("/:collectorAssayId", protect, isCollector, getRecycleRequestToCollectorController)
+router.get("/:id", protect, isCollector, getRecycleRequestToCollectorController)
 export default router;
