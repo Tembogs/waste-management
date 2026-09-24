@@ -1149,12 +1149,10 @@ export const getRecycleRequestToCollector = async (
         status: entry.status,
         rejectionReason: entry.rejectionReason,
         collectionNote: entry.collectionNote,
-
         location: entry.location,
-
-        serviceArea:
-          entry.collector?.serviceArea || null,
-
+        address : entry.address,
+        images : entry.images,
+        serviceArea:entry.collector?.serviceArea || null,
         requestDate: entry.requestDate,
         collectionDate: entry.collectionDate,
 

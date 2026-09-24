@@ -681,7 +681,6 @@ export const acceptDumpRequestService = async (
 };
 
 
-
 export const rejectDumpRequestService = async (
   dumpId,
   collectorAssayId,
@@ -1112,6 +1111,8 @@ export const getDumpRequestToCollector = async (collectorAssayId) => {
 
         materials: entry.materials,
         location: entry.location,
+        address : entry.address,
+        images : entry.images,
         description: entry.description,
 
         status: entry.status,

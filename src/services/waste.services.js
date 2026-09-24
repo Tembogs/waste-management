@@ -948,6 +948,8 @@ export const getWasteRequestToCollector = async (id) => {
       status: entry.status,
       requestDate: entry.requestDate,
       location: entry.location,
+      address : entry.address,
+      images : entry.images,
       serviceArea: entry.collector ? entry.collector.serviceArea : 'N/A',
       collectionDate: entry.collector ? entry.collector.collectionDate : null,
       totalQuantityCollected:entry.collector.totalQuantityCollected,
