@@ -30,7 +30,6 @@ router.patch("/requests/waste/:requestId/cancel",protect, requireAdmin, cancelWa
 
 router.patch("/requests/recycling/:requestId/cancel", protect, requireAdmin,cancelRecyclingRequestController);
 
-
 router.patch("/requests/illegal/:requestId/cancel", protect, requireAdmin, cancelIllegalDumpController);
 
 // admin to reward redemption

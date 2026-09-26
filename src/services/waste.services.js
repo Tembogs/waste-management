@@ -4,6 +4,7 @@ import { sendEmail } from "./email.services.js";
 import Reward from "../model/rewards.js";
 import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
+import { createNotification } from "./notification.service.js";
 
  const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
  
@@ -52,6 +53,58 @@ export const createWasteRequest = async (wasteData) => {
   });
 
   await wasteRequest.save();
+
+    // Notify all admins that a new waste request was created
+  const admins = await User.find({
+    role: "Community_admin",
+    isActive: true,
+  }).select("_id");
+
+  await Promise.all(
+    admins.map((admin) =>
+      createNotification({
+        recipient: admin._id,
+        type: "REQUEST_CREATED",
+        title: "New Waste Request",
+        message: `${user.name} submitted a new waste collection request.`,
+        link: `/admin/requests/waste/${wasteRequest._id}`,
+        metadata: {
+          requestId: wasteRequest._id,
+          requestType: "Waste",
+          userId: user._id,
+        },
+      })
+    )
+  );
+
+  // If a collector was automatically assigned, notify both sides
+  if (assignedCollector) {
+    await createNotification({
+      recipient: user._id,
+      type: "REQUEST_ASSIGNED",
+      title: "Collector Assigned",
+      message: "A collector has been assigned to your waste collection request.",
+      link: `/dashboard/waste/${wasteRequest._id}`,
+      metadata: {
+        requestId: wasteRequest._id,
+        requestType: "Waste",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+
+    await createNotification({
+      recipient: assignedCollector.collector,
+      type: "REQUEST_ASSIGNED",
+      title: "New Waste Request Assigned",
+      message: `A new waste collection request has been assigned to you in ${normalizedLocation}.`,
+      link: `/collector/waste/${wasteRequest._id}`,
+      metadata: {
+        requestId: wasteRequest._id,
+        requestType: "Waste",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+  }
 
   return wasteRequest;
 };
@@ -309,9 +362,7 @@ export const updatewaste = async (id, updateData) => {
 
 
 // Collector Section
-export const acceptWasteRequestService = async (
-  wasteId,
-  collectorAssayId
+export const acceptWasteRequestService = async (wasteId,collectorAssayId
 ) => {
   const session = await mongoose.startSession();
   let committed = false;
@@ -359,6 +410,19 @@ export const acceptWasteRequestService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+      recipient: user._id,
+      type: "REQUEST_ACCEPTED",
+      title: "Waste Request Accepted",
+      message: "Your waste collection request has been accepted.",
+      link: `/dashboard/waste/${waste._id}`,
+      metadata: {
+        requestId: waste._id,
+        requestType: "Waste",
+        collectorAssayId: assay._id,
+      },
+    });
 
     // Send email only after successful transaction
     const subject = "Waste Request Accepted ✅";
@@ -465,6 +529,20 @@ export const rejectWasteRequestService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+          recipient: user._id,
+          type: "REQUEST_REJECTED",
+          title: "Waste Request Rejected",
+          message: `Your waste collection request was rejected. Reason: ${trimmedReason}`,
+          link: `/dashboard/waste/${waste._id}`,
+          metadata: {
+            requestId: waste._id,
+            requestType: "Waste",
+            rejectionReason: trimmedReason,
+            collectorAssayId: assay._id,
+          },
+        });
 
     // Send notification after successful transaction
     const subject = "Waste Request Rejected ❌";
@@ -597,6 +675,19 @@ export const routecollectorService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+          recipient: user._id,
+          type: "REQUEST_EN_ROUTE",
+          title: "Collector Is On The Way",
+          message: "Your waste collection request is now en route.",
+          link: `/dashboard/waste/${waste._id}`,
+          metadata: {
+            requestId: waste._id,
+            requestType: "Waste",
+            collectorAssayId: assay._id,
+          },
+        });
 
     // Send notification only after successful transaction
     const subject = "Waste Request En Route 🚚";
@@ -830,6 +921,34 @@ export const collectWasteRequest = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+      recipient: user._id,
+      type: "REQUEST_COLLECTED",
+      title: "Waste Collected",
+      message: `Your waste request has been collected. ${totalCollected} ${waste.materials[0]?.unit || "units"} was collected.`,
+      link: `/dashboard/waste/${waste._id}`,
+      metadata: {
+        requestId: waste._id,
+        requestType: "Waste",
+        totalCollected,
+        collectionDate: waste.collectionDate,
+      },
+    });
+
+    await createNotification({
+      recipient: user._id,
+      type: "REWARD_EARNED",
+      title: "Reward Earned",
+      message: `You earned ${pointsEarned} reward points from your waste collection.`,
+      link: `/dashboard/rewards`,
+      metadata: {
+        requestId: waste._id,
+        requestType: "Waste",
+        rewardId: reward._id,
+        pointsEarned,
+      },
+    });
 
     /*
      * Send email after successful transaction.

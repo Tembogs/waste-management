@@ -4,6 +4,7 @@ import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
 import CollectorAssay from "../model/collectorAssay.js";
 import mongoose from "mongoose";
+import { createNotification } from "./notification.service.js";
 
 
 const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
@@ -74,6 +75,58 @@ export const reportIllegalDump = async (illegalData) => {
     });
 
     await illegalRequest.save();
+
+      // Notify all admins that a new waste request was created
+  const admins = await User.find({
+    role: "Community_admin",
+    isActive: true,
+  }).select("_id");
+
+  await Promise.all(
+    admins.map((admin) =>
+      createNotification({
+        recipient: admin._id,
+        type: "REPORT_CREATED",
+        title: "New Illegal-dump Report",
+        message: `${user.name} submitted a new Illegal dump collection report.`,
+        link: `/admin/requests/IllegalDump/${illegalRequest._id}`,
+        metadata: {
+          requestId: illegalRequest._id,
+          requestType: "IllegalDump",
+          userId: user._id,
+        },
+      })
+    )
+  );
+
+  // If a collector was automatically assigned, notify both sides
+  if (assignedCollector) {
+    await createNotification({
+      recipient: user._id,
+      type: "REQUEST_ASSIGNED",
+      title: "Collector Assigned",
+      message: "A collector has been assigned to your illegal Dumping collection report.",
+      link: `/dashboard/illegalDump/${illegalRequest._id}`,
+      metadata: {
+        requestId: illegalRequest._id,
+        requestType: "IllegalDump",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+
+    await createNotification({
+      recipient: assignedCollector.collector,
+      type: "REQUEST_ASSIGNED",
+      title: "New Ilegal-dumps Report Assigned",
+      message: `A new Ilegal-dumps collection report has been assigned to you in ${normalizedLocation}.`,
+      link: `/collector/illegalDump/${illegalRequest._id}`,
+      metadata: {
+        requestId: illegalRequest._id,
+        requestType: "IllegalDump",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+  }
 
     /*
      * Email helper.
@@ -606,6 +659,19 @@ export const acceptDumpRequestService = async (
     await session.commitTransaction();
     committed = true;
 
+        await createNotification({
+          recipient: user._id,
+          type: "REPORT_IN_REVIEW",
+          title: "Illegal-dumps Report In-Review",
+          message: "Your illegal-dumps collection report has been InReview.",
+          link: `/dashboard/IllegalDump/${dump._id}`,
+          metadata: {
+            requestId: dump._id,
+            requestType: "IllegalDump",
+            collectorAssayId: assay._id,
+          },
+        });
+
     const genTitle = (gender) =>
       gender === "Male"
         ? "Mr"
@@ -782,6 +848,20 @@ export const rejectDumpRequestService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+          recipient: user._id,
+          type: "REPORT_REJECTED",
+          title: "Illegal dumping Report Rejected",
+          message: `Your IllegalDump report request was rejected. Reason: ${trimmedReason}`,
+          link: `/dashboard/IllegalDump/${dump._id}`,
+          metadata: {
+            requestId: dump._id,
+            requestType: "IllegalDump",
+            rejectionReason: trimmedReason,
+            collectorAssayId: assay._id,
+          },
+        });
 
     const genTitle = (gender) =>
       gender === "Male"
@@ -985,8 +1065,7 @@ export const resolveDumpRequestService = async (
     /*
      * Create reward only after successful resolution.
      */
-    if (pointsEarned > 0) {
-      const reward = new Reward({
+     const reward = new Reward({
         user: user._id,
         collector: assay._id,
         sourceRequest: dump._id,
@@ -996,6 +1075,8 @@ export const resolveDumpRequestService = async (
         status: "Earned",
       });
 
+    if (pointsEarned > 0) {
+     
       await reward.save({ session });
 
       user.totalRewardPointsEarned =
@@ -1009,6 +1090,34 @@ export const resolveDumpRequestService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+      recipient: user._id,
+      type: "REPORT_RESOLVED",
+      title: "Illegal-Dumping Resolved",
+      message: `Your illegal-dumping report has been Resolved. ${totalCollected} ${waste.materials[0]?.unit || "units"} was resolutionalised.`,
+      link: `/dashboard/IllegalDump/${dump._id}`,
+      metadata: {
+        requestId: dump._id,
+        requestType: "IllegalDump",
+        totalCollected,
+        resolutionDate: dump.resolutionDate,
+      },
+    });
+
+    await createNotification({
+      recipient: user._id,
+      type: "REWARD_EARNED",
+      title: "Reward Earned",
+      message: `You earned ${pointsEarned} reward points from your illegal dumping reports.`,
+      link: `/dashboard/rewards`,
+      metadata: {
+        requestId: dump._id,
+        requestType: "IllegalDump",
+        rewardId: reward._id,
+        pointsEarned,
+      },
+    });
 
     /*
      * Send notification after the database transaction succeeds.

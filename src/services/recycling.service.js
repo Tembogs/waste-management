@@ -4,6 +4,7 @@ import Recycling from "../model/recycling.js";
 import Reward from "../model/rewards.js";
 import User from "../model/user.js";
 import { sendEmail } from "./email.services.js";
+import { createNotification } from "./notification.service.js";
 
 const genTitle = (gender) => gender === "Male" ? "Mr" : gender === "Female" ? "Mrs/Miss" : 'Mx'
 
@@ -53,6 +54,57 @@ export const createRecycleRequest = async (recycleData) => {
     });
 
     await recycleRequest.save();
+      // Notify all admins that a new waste request was created
+  const admins = await User.find({
+    role: "Community_admin",
+    isActive: true,
+  }).select("_id");
+
+  await Promise.all(
+    admins.map((admin) =>
+      createNotification({
+        recipient: admin._id,
+        type: "REQUEST_CREATED",
+        title: "New Recycling Request",
+        message: `${user.name} submitted a new Recycling collection request.`,
+        link: `/admin/requests/recycle/${recycleRequest._id}`,
+        metadata: {
+          requestId: recycleRequest._id,
+          requestType: "Recycling",
+          userId: user._id,
+        },
+      })
+    )
+  );
+
+  // If a collector was automatically assigned, notify both sides
+  if (assignedCollector) {
+    await createNotification({
+      recipient: user._id,
+      type: "REQUEST_ASSIGNED",
+      title: "Collector Assigned",
+      message: "A collector has been assigned to your recycle collection request.",
+      link: `/dashboard/recycle/${recycleRequest._id}`,
+      metadata: {
+        requestId: recycleRequest._id,
+        requestType: "Recycle",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+
+    await createNotification({
+      recipient: assignedCollector.collector,
+      type: "REQUEST_ASSIGNED",
+      title: "New Waste Request Assigned",
+      message: `A new recycle collection request has been assigned to you in ${normalizedLocation}.`,
+      link: `/collector/recycle/${recycleRequest._id}`,
+      metadata: {
+        requestId: recycleRequest._id,
+        requestType: "Recycle",
+        collectorAssayId: assignedCollector._id,
+      },
+    });
+  }
 
     const genTitle = (gender) =>
       gender === "Male"
@@ -499,6 +551,19 @@ export const acceptRecycleRequestService = async (
     await session.commitTransaction();
     committed = true;
 
+        await createNotification({
+        recipient: user._id,
+        type: "REQUEST_ACCEPTED",
+        title: "Recycling Request Accepted",
+        message: "Your Recycling collection request has been accepted.",
+        link: `/dashboard/recycle/${recycle._id}`,
+        metadata: {
+          requestId: recycle._id,
+          requestType: "Recycling",
+          collectorAssayId: assay._id,
+        },
+      });
+
     const genTitle = (gender) =>
       gender === "Male"
         ? "Mr"
@@ -624,6 +689,20 @@ export const rejectRecycleRequestService = async (
     await session.commitTransaction();
     committed = true;
 
+        await createNotification({
+          recipient: user._id,
+          type: "REQUEST_REJECTED",
+          title: "Recycling Request Rejected",
+          message: `Your Recycling collection request was rejected. Reason: ${trimmedReason}`,
+          link: `/dashboard/recycle/${recycle._id}`,
+          metadata: {
+            requestId: recycle._id,
+            requestType: "Recycling",
+            rejectionReason: trimmedReason,
+            collectorAssayId: assay._id,
+          },
+        });
+
     const genTitle = (gender) =>
       gender === "Male"
         ? "Mr"
@@ -735,6 +814,19 @@ export const routecollectorService = async (
 
     await session.commitTransaction();
     committed = true;
+
+        await createNotification({
+        recipient: user._id,
+        type: "REQUEST_EN_ROUTE",
+        title: "Collector Is On The Way",
+        message: "Your Recycling collection request is now en route.",
+        link: `/dashboard/recycle/${recycle._id}`,
+        metadata: {
+          requestId: recycle._id,
+          requestType: "Recycling",
+          collectorAssayId: assay._id,
+        },
+      });
 
     const genTitle = (gender) =>
       gender === "Male"
@@ -1018,6 +1110,41 @@ export const collectRecycleRequest = async (
 
     await session.commitTransaction();
     committed = true;
+
+    try {
+        await createNotification({
+          recipient: user._id,
+          type: "REQUEST_COLLECTED",
+          title: "Recycling Collected",
+          message: `Your recycling request has been collected. ${totalCollected} ${recycle.materials[0]?.unit || "units"} was collected.`,
+          link: `/dashboard/recycle/${recycle._id}`,
+          metadata: {
+            requestId: recycle._id,
+            requestType: "Recycling",
+            totalCollected,
+            collectionDate: recycle.collectionDate,
+          },
+        });
+
+        await createNotification({
+          recipient: user._id,
+          type: "REWARD_EARNED",
+          title: "Reward Earned",
+          message: `You earned ${pointsEarned} reward points from your recycling collection.`,
+          link: `/dashboard/rewards`,
+          metadata: {
+            requestId: recycle._id,
+            requestType: "Recycling",
+            rewardId: reward._id,
+            pointsEarned,
+          },
+        });
+      } catch (notificationError) {
+        console.error(
+          "Recycling collected, but in-app notification failed:",
+          notificationError.message
+        );
+      }
 
     /*
      * Email notification happens after the transaction.

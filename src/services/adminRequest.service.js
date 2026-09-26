@@ -130,54 +130,116 @@ export const cancelWasteRequestByAdmin = async (requestId) => {
     );
   }
 
+  const user = await User.findById(waste.user).select(
+    "_id name email"
+  );
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   waste.status = "Cancelled";
 
   await waste.save();
+
+  await createNotification({
+    recipient: user._id,
+    type: "REQUEST_CANCELLED",
+    title: "Waste Request Cancelled",
+    message: "Your waste collection request has been cancelled by an administrator.",
+    link: `/dashboard/waste/${waste._id}`,
+    metadata: {
+      requestId: waste._id,
+      requestType: "Waste",
+    },
+  });
 
   return waste;
 };
 
 export const cancelRecyclingRequestByAdmin = async (requestId) => {
-  const recycling = await Recycling.findById(requestId);
+  const recycle = await Recycling.findById(requestId);
 
-  if (!recycling) {
-    throw new Error("Recycling request not found");
+  if (!recycle) {
+    throw new Error("recycle request not found");
   }
 
   const allowedStatuses = ["Pending", "Accepted"];
 
-  if (!allowedStatuses.includes(recycling.status)) {
+  if (!allowedStatuses.includes(recycle.status)) {
     throw new Error(
-      `Recycling request cannot be cancelled while status is ${recycling.status}`
+      `Recycle request cannot be cancelled while status is ${recycle.status}`
     );
   }
 
-  recycling.status = "Cancelled";
+  const user = await User.findById(recycle.user).select(
+    "_id name email"
+  );
 
-  await recycling.save();
+  if (!user) {
+    throw new Error("User not found");
+  }
 
-  return recycling;
+  recycle.status = "Cancelled";
+
+  await recycle.save();
+
+  await createNotification({
+    recipient: user._id,
+    type: "REQUEST_CANCELLED",
+    title: "Recycle Request Cancelled",
+    message: "Your recycle collection request has been cancelled by an administrator.",
+    link: `/dashboard/recycle/${recycle._id}`,
+    metadata: {
+      requestId: recycle._id,
+      requestType: "Recycling",
+    },
+  });
+
+  return recycle;
 };
+
+
 
 
 export const cancelIllegalDumpByAdmin = async (requestId) => {
   const illegalDump = await IllegalDump.findById(requestId);
 
   if (!illegalDump) {
-    throw new Error("Illegal dump report not found");
+    throw new Error("illegalDump request not found");
   }
 
-  const allowedStatuses = ["Pending", "InReview"];
+  const allowedStatuses =["Pending", "InReview"];
 
   if (!allowedStatuses.includes(illegalDump.status)) {
     throw new Error(
-      `Illegal dump report cannot be cancelled while status is ${illegalDump.status}`
+      `illegalDump request cannot be cancelled while status is ${illegalDump.status}`
     );
+  }
+
+  const user = await User.findById(waste.user).select(
+    "_id name email"
+  );
+
+  if (!user) {
+    throw new Error("User not found");
   }
 
   illegalDump.status = "Cancelled";
 
   await illegalDump.save();
+
+  await createNotification({
+    recipient: user._id,
+    type: "REQUEST_CANCELLED",
+    title: "Illegal-Dump Report Cancelled",
+    message: "Your Illegal-Dump Report request has been cancelled by an administrator.",
+    link: `/dashboard/waste/${illegalDump._id}`,
+    metadata: {
+      requestId: illegalDump._id,
+      requestType: "IllegalDump",
+    },
+  });
 
   return illegalDump;
 };
